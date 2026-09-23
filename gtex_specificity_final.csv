@@ -1,0 +1,20 @@
+"tissue","own","rank","up1","margin","n"
+"lung",5.28,1,"Spleen",2.74,143
+"stomach",4.19,1,"Small_Intestine_Terminal_Ileum",1.81,225
+"intestine",3.66,1,"Stomach",1.8,716
+"esophagus",6.47,1,"Vagina",1.15,397
+"liver",5.55,1,"Small_Intestine_Terminal_Ileum",2.71,926
+"breast",3.59,1,"Adipose_Subcutaneous",0.5,123
+"cervix",4.42,1,"Vagina",0.02,229
+"endometrium",4.77,1,"Cervix_Endocervix",0.63,75
+"ovary",4.66,1,"Fallopian_Tube",1.91,164
+"skin",4.54,1,"Esophagus_Mucosa",1.68,570
+"pancreas",5.12,1,"Stomach",2.52,292
+"kidney",4.09,1,"Liver",1.75,440
+"prostate",4.07,1,"Testis",2.38,118
+"testis",4.74,1,"Pituitary",3.44,1868
+"thyroid gland",5.03,1,"Kidney_Medulla",2.79,169
+"vagina",6.35,2,"Esophagus_Mucosa",-0.35,140
+"fallopian tube",2.36,2,"Testis",-1.2,298
+"adrenal gland",4.9,1,"Pituitary",2.08,216
+"urinary bladder",3.64,1,"Esophagus_Mucosa",0.95,111

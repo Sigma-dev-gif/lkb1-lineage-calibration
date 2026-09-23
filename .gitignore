@@ -1,0 +1,9 @@
+*.rds
+*.rda
+sim/
+sim2/
+scores/
+scores_new/
+.Rhistory
+.RData
+.DS_Store
