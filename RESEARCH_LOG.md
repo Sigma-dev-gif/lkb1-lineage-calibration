@@ -998,3 +998,128 @@ There is a gradient — three of four decline as purity rises — worth reportin
 3. External validation outside TCGA; second gene-set collection.
 4. Package `calibrate_geneset()`.
 5. Paper draft.
+
+## 2026-09-23 (cont.) — Matched-random nulls cannot match real gene sets on coherence
+
+### Simulation grid 2: Tier 1 is anti-conservative for internally coherent sets
+Grid 1 (120 cells) induced correlation with a single latent factor affecting all genes equally, so the tested set and the background were equally correlated — nothing for a competitive test to correct. That design, not CAMERA, produced its 0% rejection rate. Rewritten with correlation induced separately inside and outside the set.
+
+Grid 2, background ρ = 0.05, set ρ = 0.15, true effect 0:
+
+| m | Tier 1 type I error |
+|---|---|
+| 75 | 0.035 |
+| 250 | **0.125** |
+| 900 | **0.255** |
+
+**Tier 1 over-rejects when the tested set is more internally correlated than the random sets it is compared against.** Tier 1 matches on gene count and expression decile but not on internal coherence. Real gene sets are coherent by construction; random matched sets are not. The null is therefore built from less-correlated sets than the one being tested, making it too narrow.
+
+This is precisely the problem CAMERA was built for, and why CAMERA estimates ρ from the actual set rather than from random draws.
+
+### The attempted fix failed
+Correlation-matched draws — generate 3–5× the needed candidates, keep those closest in mean inter-gene correlation to the target. At m = 250, 20 reps: unmatched 0.10, **matched 0.15**. No improvement; if anything worse (though SE ≈ 0.08 at 20 reps, so the two are not distinguishable).
+
+Likely reason: selecting the closest candidates draws from the extreme tail of the candidate distribution, and those extreme draws differ from typical random sets in other ways. Choosing draws by a property computed from the same data being tested is a subtler form of the problem being solved.
+
+### Why it cannot work — the decisive measurement
+Mean inter-gene correlation of the 14 scored programs in LUAD, against random draws:
+
+| Program | m | ρ |
+|---|---|---|
+| lung | 137 | **0.245** |
+| pan-squamous | 30 | 0.153 |
+| endometrium | 72 | 0.115 |
+| ovary | 156 | 0.109 |
+| stomach | 201 | 0.094 |
+| urinary bladder | 108 | 0.068 |
+| intestine | 671 | 0.061 |
+| breast | 110 | 0.045 |
+| pancreas | 272 | 0.045 |
+| kidney | 420 | 0.044 |
+| thyroid | 157 | 0.042 |
+| liver | 902 | 0.041 |
+| adrenal | 206 | 0.037 |
+| prostate | 109 | 0.028 |
+
+**Random 250-gene draws: min 0.009, median 0.013, max 0.021.**
+
+Lung requires ρ = 0.245 — roughly twelve times the maximum any random draw achieves. Even the least coherent program, prostate at 0.028, exceeds the random maximum. **No candidate pool of random draws can match a real gene set on coherence, because coherence is what makes it a gene set.**
+
+This is a structural limit on matched-random nulls, not an implementation detail.
+
+### This also resolves the discordant-nine tension
+Grid 2 predicts Tier 1's over-rejection grows with m, so Tier1-only false passes should concentrate in large sets. Empirically they do not: Tier1-only cases have median m = 220, *smaller* than the concordant survivors at 371.
+
+**Resolution: in real programs ρ and m are negatively correlated (Spearman −0.47).** Lung ρ = 0.245 at m = 137; liver ρ = 0.041 at m = 902. Large tissue programs are heterogeneous; small ones are tight. Grid 2 held ρ fixed while varying m, so it explored a parameter combination that does not occur in real data. The two effects move in opposite directions and largely cancel.
+
+The empirical pattern does not contradict the simulation. The simulation was run off the real-data manifold.
+
+### What still stands, and why
+- **The 65% attrition figure holds.** Those 28 results failed a null that was, if anything, too easy to beat.
+- **The six survivors hold, but for a different reason.** All six also cleared CAMERA, which estimates ρ from the actual set and is therefore not vulnerable to the coherence failure. They are protected by concordance, not by Tier 1. §8's problem does not undermine them.
+
+Two separate arguments; both need stating explicitly, because a reader could otherwise conclude the calibration failure invalidates the survivor list. It does not.
+
+### Reframing the contribution
+Not "empirical calibration is the remedy." Rather:
+
+> Matched-random gene-set nulls are straightforward to build, catch a large fraction of nominally significant results, and agree with established corrections wherever both have an opinion — but they cannot be made correct, because random draws cannot reproduce the internal coherence that defines a real gene set. This explains why correlation-estimating approaches (CAMERA) and rotation-based tests (ROAST) exist, and quantifies what the naive alternative costs.
+
+Nothing here is claimed as an improved method. The corrected Tier 1 was attempted and did not work, and that is reported as prominently as the original procedure.
+
+### Remaining options for a corrected null, not yet attempted
+1. **Rotation testing (ROAST)** — preserves observed correlation structure by construction instead of reproducing it in draws. Probably the right answer; shifts the contribution to "why the naive approach fails and what does not."
+2. **Model the dependence** — regress empirical p on draw-level ρ and calibrate. Uses information already computed; least clean.
+
+Pre-commitment, written before either is run: if neither removes the inflation, that result goes in the paper as prominently as everything above.
+
+## 2026-09-23 (cont.) — ROAST: correct where Tier 1 fails, inflated where Tier 1 is fine
+
+Rotation testing (`limma::roast`, 999 rotations) run on the same block-correlation simulation that broke Tier 1. Rotation preserves the observed correlation structure by construction rather than attempting to reproduce it in draws.
+
+### Type I error, background ρ = 0.05, 200 reps
+
+| m | set ρ | Tier 1 | ROAST |
+|---|---|---|---|
+| 75 | 0.05 | — | **0.135** |
+| 250 | 0.05 | — | 0.060 |
+| 900 | 0.05 | — | 0.050 |
+| 75 | 0.15 | 0.035 | **0.100** |
+| 250 | 0.15 | **0.125** | 0.060 |
+| 900 | 0.15 | **0.255** | 0.065 |
+
+### Power, effect 0.1
+
+| m | set ρ 0.05 | set ρ 0.15 |
+|---|---|---|
+| 75 | 0.915 | 0.635 |
+| 250 | 0.965 | 0.755 |
+| 900 | 0.995 | 0.720 |
+
+Power falls when the set is internally coherent, as expected — effective sample size drops.
+
+### Reading
+**ROAST is correctly calibrated at m = 250 and 900** (0.050–0.065) in exactly the region where Tier 1 fails badly (0.125, 0.255). It is also fast: 14 s versus roughly 4 min for the Tier 1 equivalent.
+
+**But ROAST over-rejects at m = 75** (0.135 and 0.100; SE ≈ 0.015 at 200 reps, so 0.135 is genuinely above nominal). Rotation strains for small sets.
+
+**Neither method is universally correct.** ROAST is right where Tier 1 fails; Tier 1 happens to be fine at m = 75 where ROAST is inflated.
+
+### This converges with the empirical CAMERA result
+Small sets are where every method struggles, for three different reasons. In real data, CAMERA rejected sets with m ≤ 231 that Tier 1 passed (the discordant nine, median m = 220). In simulation, ROAST over-rejects at m = 75 while Tier 1 does not. The empirical and simulated results both point at small gene sets as the hard regime — not at any one method being wrong.
+
+This is a more defensible and more interesting statement than "rotation testing fixes it."
+
+### Consequence for the write-up
+The recommendation cannot be "use ROAST instead." It is closer to: draw-based nulls fail predictably for coherent sets and should not be used there; rotation testing is correct for moderate and large sets but should be checked for small ones; and the regime where all three approaches disagree — small, weakly correlated sets — deserves attention it does not currently get.
+
+Saved: `roast_grid.rds`.
+
+### Next session
+1. **External validation** — GSE72094 (already held from prior work) via GEOquery; score the signature, call LKB1 status, check whether the floor behaves as in TCGA. Answers the single-data-source limitation.
+2. **Package `calibrate_geneset()`** — `usethis`/`devtools` scaffolding, documentation, unit tests, vignette, installable via `install_github`.
+3. Then, and not before, the paper draft — abstract first.
+
+Emails sent to Smyth, Wu, Irizarry, Leek, Waldron, Bandyopadhyay (UCSF, local, senior author of the source signature) and Dudoit (Berkeley, local). **Smyth replied within a day.** He did not follow the question as written — the email was too dense and did not distinguish randomizing *gene sets* from permuting *sample labels*. His reply nonetheless describes the same failure from the sample-label side: permuting labels on a cancer dataset whose real groups differ substantially does not produce a null dataset, because the permuted data carry higher dispersion and often genuine DE, and he notes this has produced published false conclusions. That is the sample-label analogue of the DE-density result here (R² = 0.57). A short follow-up was sent asking whether non-null randomized gene sets are the same failure or a distinct one.
+
+**Lesson for future outreach: one question, stated in one sentence, near the top.**
