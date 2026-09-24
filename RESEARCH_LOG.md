@@ -1123,3 +1123,80 @@ Saved: `roast_grid.rds`.
 Emails sent to Smyth, Wu, Irizarry, Leek, Waldron, Bandyopadhyay (UCSF, local, senior author of the source signature) and Dudoit (Berkeley, local). **Smyth replied within a day.** He did not follow the question as written — the email was too dense and did not distinguish randomizing *gene sets* from permuting *sample labels*. His reply nonetheless describes the same failure from the sample-label side: permuting labels on a cancer dataset whose real groups differ substantially does not produce a null dataset, because the permuted data carry higher dispersion and often genuine DE, and he notes this has produced published false conclusions. That is the sample-label analogue of the DE-density result here (R² = 0.57). A short follow-up was sent asking whether non-null randomized gene sets are the same failure or a distinct one.
 
 **Lesson for future outreach: one question, stated in one sentence, near the top.**
+
+## 2026-09-24 — External validation: the inflation replicates outside TCGA
+
+**GSE72094** (Schabath et al., lung adenocarcinoma, Affymetrix Rosetta/Merck array GPL15048), obtained via GEOquery. 442 samples, 22,115 unique gene symbols after collapsing probes by mean. Already log2 RMA scale.
+
+Independent of TCGA on every axis that matters: different platform (microarray, not RNA-seq), different patients, different institution, different processing pipeline.
+
+**Grouping: STK11 mutation status from sequencing — 68 mutant, 374 wild-type.** No expression involved in defining the groups, so this parallels the genomic-only LUAD analysis rather than the signature-based one.
+
+**Signature could not be scored here.** Only 26 of 30 genes map to the array, below the 28/30 floor fixed in Amendment 10. Missing: JADE1, ADGRF1, MTARC1, C2CD4D — three of which are the post-2012 renames of PHF17, GPR110 and MOSC1, so the array predates the symbol changes. The rule was applied rather than waived.
+
+### Result
+
+| Program | m | ρ | β | nominal p | Tier 1 p | floor_std |
+|---|---|---|---|---|---|---|
+| lung | 124 | **0.245** | −0.271 | 0.040 | 0.73 | 5.69 |
+| stomach | 187 | 0.103 | 0.266 | 0.043 | 0.90 | 5.56 |
+| liver | 828 | 0.031 | 0.323 | 0.014 | 0.96 | 4.99 |
+| ovary | 146 | 0.083 | −0.281 | 0.033 | 0.82 | 5.38 |
+| pancreas | 244 | 0.023 | 0.417 | 0.0015 | 0.50 | 5.33 |
+| breast | 99 | 0.026 | −0.216 | 0.101 | 0.78 | 5.79 |
+| (8 others) | | | | n.s. | 0.89–1.00 | 4.66–5.81 |
+
+**Standardized floors: 4.66 to 5.81, median ≈ 5.2, against a theoretical 1.96.** The inflation replicates outside TCGA.
+
+Three observations:
+
+1. **Floors are far more uniform here** (4.66–5.81) than across TCGA cohorts (2.91–7.68). A single cohort with a single grouping produces a tight band; the TCGA spread reflects between-cohort variation.
+2. **Nothing survives.** Four programs reach nominal p < 0.05 — pancreas 0.0015, liver 0.014, ovary 0.033, lung 0.040 — and every one dies at Tier 1 (lowest 0.50). Same pattern as TCGA, same control catching it.
+3. **Lung ρ = 0.245, identical to the TCGA LUAD value**, on a completely different platform. The coherence measurement that makes draw-matching impossible is not a quirk of RNA-seq or of one dataset.
+
+This closes the single-data-source limitation, which was the project's largest structural weakness.
+
+Saved: `external_gse72094.rds`.
+
+## 2026-09-24 — Smyth's second reply: confirmed, and not novel
+
+Follow-up question asked whether randomizing *gene sets* is the same failure as permuting *sample labels*. His answer:
+
+> "It is a distinct problem. Randomizing gene sets is extremely anti-conservative because it ignores inter-gene correlations."
+
+He linked a Bioconductor thread and a WEHI seminar. The thread (support.bioconductor.org/p/9158100) contains, from 2.4 years ago:
+
+> "Pre-ranked GSEA make the wildly unrealistic assumption that genes are statistically independent. It does not correct for inter-gene correlation and therefore gives wildly inflated statistical significance. In effect, pre-ranked GSEA is detecting gene sets that contain co-regulated genes rather than gene sets that are differentially expressed between the experimental conditions."
+
+He adds that the problem worsens with more samples, and links six earlier posts making the same point.
+
+**That is this project's finding, stated by him, years earlier.** The phenomenon is confirmed by the authority and is not novel. Fifth time a novelty claim has shrunk on contact with the literature.
+
+### What remains distinct, stated precisely
+1. **Different workflow.** Smyth describes pre-ranked GSEA, where gene permutation *is* the test. This project concerns per-sample ssGSEA scores entered as regression outcomes — same dependence problem, different procedure, and the one the literature audit shows carries no reported correction anywhere.
+2. **Quantification.** "Wildly inflated" versus type I error 0.125 at m = 250 and 0.255 at m = 900; real programs at ρ = 0.245 against random draws capped at 0.021 as the structural reason matching cannot work; 65% attrition in a real pre-registered analysis; replication at floor ≈ 5.2 in an independent cohort.
+3. **ROAST over-rejects at m = 75** (0.135 and 0.100 at 200 reps). Not in that thread and not found documented elsewhere. Possibly the one genuinely new observation.
+4. **The literature audit** — five papers, the adoption curve from 2 to ~100 per year, a tool paper precomputing 13,434 gene sets with no correction reported.
+
+**Framing:** a quantification-and-demonstration paper that cites Smyth heavily, not a discovery. `cameraPR` is his recommended replacement for pre-ranked GSEA and should be cited as such.
+
+## 2026-09-24 — `gscalibrate` package built, tested, published
+
+Wrapped `calibrate_geneset()` as an installable R package rather than leaving it as a loose function.
+
+**Contents.** `calibrate_geneset()` and `set_coherence()`; roxygen documentation; four unit tests; an HTML vignette; MIT license.
+
+**What the function returns**, per gene set: observed coefficient, nominal p, empirical p against matched-random draws, `floor_95` (95th percentile of the absolute null coefficient), `floor_std` (that floor in units of its own standard error, comparable to 1.96), `rho_set`, `rho_null_max`, and a `reliable` flag.
+
+**The limitation is built into the tool, not buried.** `reliable` is FALSE when the tested set's internal correlation exceeds twice the maximum any random draw achieved, and the function emits a warning directing the user to `limma::roast` or `limma::cameraPR`. The vignette states the numbers — ρ = 0.245 for real programs against 0.021 for draws, type I error 0.125 at m = 250 and 0.255 at m = 900 — and includes a worked example where the flag fires.
+
+**Tests.** Four, covering: calibrated p-values under an independent null; detection of a real effect; correct flagging of a coherent set as unreliable; input validation. All seven assertions pass.
+
+One instructive test warning: in the "real effect is detected" test, adding a shared +1 shift to 100 genes makes them correlated, so the coherence flag fires on a true positive. **A real effect creates coherence.** The flag cannot distinguish "coherent because it is a real gene set" from "coherent because the effect is real," and that belongs in the documentation as a stated limitation.
+
+**`R CMD check`: 0 errors, 0 warnings, 1 note** (the note is a failed timestamp-server lookup, not a package issue). This meets CRAN's technical bar.
+
+Published at **github.com/Sigma-dev-gif/gscalibrate**, installable via `remotes::install_github("Sigma-dev-gif/gscalibrate")`.
+
+### Status
+All computational work is complete: pre-registered analysis, controls, CAMERA comparison, two simulation grids, ROAST comparison, external validation in GSE72094, and a released tool. Remaining work is the write-up.
