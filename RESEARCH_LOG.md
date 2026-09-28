@@ -1200,3 +1200,216 @@ Published at **github.com/Sigma-dev-gif/gscalibrate**, installable via `remotes:
 
 ### Status
 All computational work is complete: pre-registered analysis, controls, CAMERA comparison, two simulation grids, ROAST comparison, external validation in GSE72094, and a released tool. Remaining work is the write-up.
+
+## 2026-09-24 — p-value formula corrected; VIF rescaling fails
+
+### Item 3a: permutation p-values were computed wrong
+The empirical p was `mean(abs(nb) >= abs(b))`, which can return exactly 0. A permutation p-value can never be zero: the observed arrangement is itself one draw. Correct estimator is **(b+1)/(n+1)** — Phipson & Smyth (2010), *Permutation P-values should never be zero*.
+
+Affected every Tier 1 p reported in this project. The 0.000 values for HNSC pancreas, HNSC kidney and several simulation cells should read 0.001 at 1,000 draws. Fixed in `gscalibrate`; all seven test assertions still pass. **All reported Tier 1 p-values must be recomputed with the corrected formula (item 4a).**
+
+### Item 10: variance-inflation rescaling of the empirical null — FAILS
+
+Idea: the null coefficients are too tightly spread because random draws have lower ρ than the tested set, so rescale them by the VIF ratio (1+(m−1)ρ_set)/(1+(m−1)ρ_null), following CAMERA's logic.
+
+First attempt used the full square root: type I error went from 0.12 to **0.00**. Overcorrection. The VIF describes the variance of a sum of m correlated variables, but the score here is a *mean* and is z-scored before regression, so standardisation already absorbs much of the scale difference and the full factor double-counts it.
+
+Exponent search across four configurations, 100 reps each, type I error:
+
+| | pow 0 | 0.10 | 0.15 | 0.20 | 0.25 |
+|---|---|---|---|---|---|
+| m 250, ρ_set 0.15 | 0.15 | 0.12 | 0.10 | 0.10 | 0.07 |
+| m 900, ρ_set 0.15 | 0.24 | 0.21 | 0.21 | 0.19 | 0.17 |
+| m 250, ρ_set 0.05 | **0.05** | 0.05 | 0.06 | 0.06 | 0.06 |
+| m 75, ρ_set 0.15 | **0.03** | 0.02 | 0.02 | 0.01 | 0.00 |
+
+**No single exponent works.** Rows 1 and 2 need more correction than even the quarter power provides; rows 3 and 4 need none, and correction makes row 4 actively conservative (0.03 → 0.00). The required adjustment is not a monotone function of the VIF ratio.
+
+**Item 10 is reported as failed.** Rescaling a draw-based null by an inflation factor does not restore calibration.
+
+### But the same grid supplies item 14
+
+Tier 1's failure is specific, not general:
+
+| m | ρ_set | Tier 1 type I |
+|---|---|---|
+| 75 | 0.15 | 0.03 — conservative |
+| 250 | 0.05 | 0.05 — correct |
+| 250 | 0.15 | 0.15 — inflated |
+| 900 | 0.15 | 0.24 — badly inflated |
+
+It fails at **large m and high ρ together**, and is fine otherwise. Combined with the ROAST grid — correct at m = 250 and 900, over-rejecting at m = 75 — the two methods fail in complementary regions. That is a decision rule readable off the data rather than a speculative proposal, and it is now the most promising route to item 14.
+
+### Running score
+- Item 3a: **done** (p-value formula)
+- Item 10: **attempted, failed, reported**
+- Item 14: reframed — the boundary is empirical, derived from the two grids
+- Item 4a: **now required** — recompute all Tier 1 p-values at 1,000 draws with (b+1)/(n+1)
+- Item 31 (mentor): **moved to top priority.** Cold outreach runs one to three months; the pitch is strongest now, before the next phase is designed, because a mentor should shape it rather than review it.
+
+## 2026-09-24 (cont.) — Item 13: ROAST over-rejects for small sets, monotone in m
+
+Diagnosing the m = 75 over-rejection found earlier.
+
+### Not the rotation count, not the set statistic
+| Variant (m = 75, ρ_set 0.15) | Type I |
+|---|---|
+| default, nrot 999 | 0.11 |
+| nrot 4999 | 0.10 |
+| set.statistic "floormean" | 0.46 |
+| set.statistic "mean50" | 0.75 |
+
+Rotation count makes no difference. The default `mean` statistic is the best of the three by a wide margin.
+
+### Not coherence either — it is worse at LOW correlation
+| | Type I |
+|---|---|
+| m 75, ρ_set 0.15 | 0.110 |
+| m 75, ρ_set 0.05 | **0.160** |
+| m 150, ρ_set 0.15 | 0.055 |
+
+This rules out the coherence explanation and points at set size alone.
+
+### The curve (ρ_set 0.05, 200 reps, MC SE ≈ 0.03)
+
+| m | 30 | 50 | 75 | 100 | 150 | 200 | 250 | 900 |
+|---|---|---|---|---|---|---|---|---|
+| type I | **0.225** | 0.210 | 0.160 | 0.165 | 0.055 | 0.065 | 0.060 | 0.050 |
+
+**Monotone in set size. Roughly 4× nominal at m = 30, reaching nominal by m ≈ 150.** The transition is sharp: 0.165 at m = 100 to 0.055 at m = 150.
+
+### Why it matters
+MSigDB Hallmark sets run 30–200 genes; most GO terms are well under 150. A large share of routine gene set testing sits in the inflated region.
+
+### Caveats, stated
+One simulation design: n = 500, 5,000 genes, 40% background DE, single-latent-factor correlation. **My simulations have been materially wrong twice** (grid 1's correlation structure; the VIF exponent). This is reported to the method's author as "here is what I observe, am I doing something wrong," not as a defect claim.
+
+Plausible mechanism, untested: at small m the rotation draws from a low-dimensional residual space and the rotated statistics may not span the null well. Predicts dependence on residual degrees of freedom — testable by varying n.
+
+Saved: `roast_smallset.rds`. Emailed to Smyth.
+
+### Running score
+- Item 3a p-value formula — **done**
+- Item 4a corrected all stored p-values by arithmetic; **65% attrition unchanged (28/43)**; all six survivors hold — **done**
+- Item 4b Monte Carlo SEs — **done**; Tier 1 at 0.125 ± 0.023 and 0.255 ± 0.031 both exclude 0.05; ROAST at m = 75, 0.135 ± 0.024, excludes 0.05
+- Item 10 VIF rescaling — **failed, reported**
+- Item 13 ROAST diagnosis — **done**, monotone curve, cause localised to set size
+- Item 14 hybrid rule — now directly constructible from the two grids
+
+## 2026-09-24 (cont.) — Items 12 and 14 solved; item 22 causal test uninformative
+
+### Item 12: residual coherence separates a real effect from a real gene set
+The `reliable` flag fired on true positives, because a real effect makes genes move together. Computing coherence on residuals after regressing out the grouping variable fixes it:
+
+| | raw ρ | residual ρ |
+|---|---|---|
+| pure effect, independent genes | 0.200 | **0.003** |
+| genuinely coherent set | 0.554 | 0.554 |
+
+Clean separation. Implemented in `gscalibrate`. The package's own "real effect is detected" test no longer emits the warning — the fix proving itself.
+
+### Item 14: the hybrid rule, read off the grids
+Tier 1 at low coherence, previously unmeasured: m 30 → 0.06, m 75 → 0.05, m 100 → 0.07. Nominal.
+
+Combined type I error across everything run:
+
+| m | Tier 1 | ROAST |
+|---|---|---|
+| 30–100 | 0.03–0.07 ✓ | 0.16–0.23 ✗ |
+| 150–900, low ρ | 0.05 ✓ | 0.05–0.07 ✓ |
+| 250–900, high ρ | 0.13–0.26 ✗ | 0.06 ✓ |
+
+**Rule: m < 150 → empirical null; m ≥ 150 → ROAST.** Every cell is then controlled. The two methods fail in complementary regions, which is what makes a rule possible.
+
+Added to `gscalibrate` as a `recommended` column. **This closes the "diagnoses but does not fix" gap** — the tool now tells the user which method to use, and the rule is derived from data rather than asserted.
+
+### Item 22: causal test — attempted, uninformative, and instructive
+
+**GSE6135**: A549 and H2126 lung lines, LKB1-restored vs parental, plus a kinase-dead A549 control, at 3% and 21% oxygen. Twelve samples, Agilent two-colour (log ratios, not absolute expression).
+
+**A549 is unusable.** STK11 signal: restored 0.42, 0.35 vs parental 0.24, 0.12 and kinase-dead 0.21, 0.14 — no separation. A549 carries a nonsense *mutation* and still transcribes mutant mRNA, which the probe cannot distinguish from restored transcript. H2126 is null by deletion and separates cleanly: restored 1.64, 1.82, 1.39, 1.65 vs parental −1.55, −1.63.
+
+That leaves **4 restored vs 2 parental**.
+
+**First pass was an artifact.** All 14 programs rose by 0.55–1.12. Global means: parental −0.161, restored 0.018 — an array-level shift moving every gene set together. Within-sample scaling removed about a third of it.
+
+**After scaling, 12 of 14 still rise (0.19 to 0.81), including the native lung program at 0.366, sitting mid-pack.** No separation between native and foreign. The direction is also opposite to H1: restoring LKB1 *raises* tissue-identity programs rather than lowering foreign ones.
+
+**The trap, worth recording.** Random 150-gene draws give 0.003 ± 0.101, 90% interval [−0.166, 0.168] — so the programs look significant against that null. But random draws are low-coherence and real programs are high-coherence, so that null is too narrow. **Applying the naive comparison here would be exactly the error this project is about**, committed in the project's own causal experiment. A good demonstration of how easy the mistake is.
+
+**Conclusion: the design cannot support the question.** 4 vs 2 samples, two-colour ratios, a single parental condition pair, and no valid null at n = 6 (too small for ROAST, and the draw-based null is invalid for coherent sets). Reported as attempted and uninformative rather than squeezed for a result.
+
+A usable causal test needs more replicates and single-channel or RNA-seq data. That is a mentor-scale request.
+
+### Running score
+- Items 3a, 4a, 4b, 12, 13, 14 — **done**
+- Item 10 — failed, reported
+- Item 22 — attempted, uninformative, reported
+
+## 2026-09-25 — RETRACTION: the ROAST small-set finding was a simulation artifact
+
+**Gordon Smyth, by email:** *"roast() controls the type I error rate correctly for all gene set sizes, even m=1 or m=2. I don't have time to check your code."*
+
+**The real data agrees with him, not with my simulation.** Running `mroast` on 50 Hallmark sets in two cohorts, rejection rate at p < 0.05 by set size:
+
+| Cohort | m < 150 | m ≥ 150 |
+|---|---|---|
+| LUAD | 0.636 | **0.821** |
+| HNSC | 0.500 | **0.571** |
+
+ROAST rejects **more** for large sets, not small ones — the opposite of the simulated pattern (0.225 at m = 30 falling to 0.050 at m = 900).
+
+**The simulated ROAST curve is withdrawn.** It is the third time a simulation design in this project has produced a spurious result: grid 1's single-latent-factor correlation structure, the VIF exponent search, and now this. The claim should not appear in any write-up.
+
+**Consequences:**
+- The "ROAST over-rejects below m ≈ 150" claim is retracted.
+- **Item 14's hybrid rule loses its justification on the ROAST side** and is withdrawn pending a correct basis. The Tier 1 side (anti-conservative for coherent sets) is supported by simulation *and* by the coherence measurement in real data, so it stands.
+- The `recommended` column in `gscalibrate` currently implements a rule with no valid support and must be removed or re-derived.
+
+**What remains unexplained:** ROAST rejects 37 of 50 Hallmark sets in LUAD and 27 of 50 in HNSC, while the empirical null leaves 6 and 3. Either the empirical null is far too conservative on real data, or ROAST is detecting real signal the empirical null misses, or `mroast` behaves differently from `roast`. Not resolved. Do not write a story about it.
+
+## 2026-09-25 — Hallmark generalisation: the finding is about gene sets, not lineage programs
+
+### Attrition across four cohorts, 50 Hallmark sets each
+
+| Cohort | n | % deficient | BH-significant | survive Tier 1 | **% failing** |
+|---|---|---|---|---|---|
+| LUAD | 497 | 26.0 | 38 | 6 | **84.2** |
+| HNSC | 494 | 16.8 | 26 | 3 | **88.5** |
+| COADREAD | 527 | 17.3 | 21 | 3 | **85.7** |
+| BRCA | 1,023 | 17.0 | 20 | 9 | **55.0** |
+
+**105 BH-significant results across four cohorts; 84 fail empirical calibration — 80% overall.** Higher than the 65% measured on HPA lineage programs.
+
+BRCA is the outlier and **group balance does not explain it** (17.0% deficient, essentially identical to COADREAD 17.3% and HNSC 16.8%). The only obvious difference is n = 1,023 versus ~500. Note this runs opposite to Smyth's remark that permutation-null problems worsen with more samples. Unexplained; reported as such.
+
+### Standardized floors in LUAD, Hallmark
+Median 5.67, range 5.00–7.16, against a theoretical 1.96. Every one of the 50 sets sits in the inflated region.
+
+### The coherence impossibility holds across three collections
+
+| Collection | sets | median ρ | max ρ | % above the random-draw maximum (0.020) |
+|---|---|---|---|---|
+| Hallmark | 50 | 0.067 | 0.306 | **92.0** |
+| Reactome (C2:CP) | 200 | 0.060 | 0.450 | **92.5** |
+| GO Biological Process (C5) | 200 | 0.047 | 0.397 | **88.0** |
+
+Random 150-gene draws in the same matrix: median 0.014, maximum 0.020.
+
+Most coherent Hallmark sets: E2F targets 0.306, interferon-alpha response 0.280, EMT 0.238, G2M checkpoint 0.238, MYC targets V2 0.236 — all in routine use.
+
+**The claim generalises from "tissue-identity programs in an LKB1 analysis" to "gene sets across three major collections and four cohorts."** This is the headline.
+
+## 2026-09-25 — Equivalence bounds and the fragile-step audit
+
+### Item S1: H1's null result is a bound, not a power failure
+
+| Cohort | β | 95% CI | Tier 1 floor |
+|---|---|---|---|
+| LUAD | 0.270 | [0.184, 0.356] | 0.786 |
+| STAD | 0.106 | [−0.011, 0.222] | 0.500 |
+
+**Effects larger than 0.36 in LUAD and 0.22 in STAD are excluded.** Both ceilings sit well below the detection floors, so the null is informative rather than underpowered.
+
+### Item 3b: audit passes on all five checks
+Score-to-expression correlation +0.733 (correct direction) · seed reproducible · zero scored genes leaking into Tier 1 draws · no ambiguous symbol mappings · `deficient` coded correctly with n = 129 in LUAD.

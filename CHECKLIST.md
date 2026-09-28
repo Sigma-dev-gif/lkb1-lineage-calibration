@@ -1,83 +1,113 @@
-# Project checklist — 50 items
-Updated 2026-09-24. Tick as completed; each session starts here.
-
-## A. Verify what exists (months 1–2)
-- [x] **3a. p-value formula** — was `b/n`, can return 0. Now `(b+1)/(n+1)` per Phipson & Smyth 2010. Fixed in package, tests pass.
-- [ ] **3b. Audit remaining fragile steps** — symbol mapping, NA handling, z-scoring direction, Tier 1 universe, seed handling
-- [ ] **4a. Rerun all Tier 1 p-values** at 1,000 draws with corrected formula
-- [ ] **4b. Monte Carlo SEs** on every simulated error rate
-- [ ] **1. Clean-machine reproduction** — renv or Docker, one script regenerates every number
-- [ ] **2. Independent rerun** by another person
-- [ ] **5. OSF timestamp** of pre-spec and amendments
-
-## B. Reframe (month 2)
-- [ ] **6. Competitive vs self-contained null** (Goeman & Bühlmann 2007) as the organising frame
-- [ ] **7. Literature: Venet 2011, Tamayo 2016, Wu & Smyth 2012, Geistlinger 2021, Smyth thread** — plus a real search for the sixth precedent
-- [ ] **8. One-sentence contribution statement** that survives all of them
-
-## C. From diagnosis to fix (months 2–5) — HIGHEST VALUE
-- [ ] **10. Variance-inflation correction for Tier 1** — rescale null by √[(1+(m−1)ρ_set)/(1+(m−1)ρ_null)]
-- [ ] **12. Residual-coherence flag** — compute ρ after regressing out group, so the flag stops firing on true positives
-- [ ] **13. Diagnose ROAST small-set over-rejection** — 2,000 reps, vary set.statistic/nrot/df, test squeezeVar
-- [ ] **14. Hybrid decision rule** — pick the calibrated method by (m, ρ); show type I control across the grid
-- [ ] **9. Derive the floor analytically** and validate on all 15 cohorts + GSE72094
-- [ ] **11. Real-set null** — draw from MSigDB C2/C5 matched on size and coherence
-- [ ] **S4. Formal proof** of the structural limit (concentration inequality)
-
-## D. Scale the benchmark (months 3–6)
-- [ ] **15. Plasmode simulations** — real TCGA expression, random splits, spiked effects
-- [ ] **16. Block-structured correlation** in the synthetic grid
-- [ ] **17. Regime map** — Hallmark/Reactome/GO/HPA × 33 TCGA types × mutation/sex/stage/random
-- [ ] **18. More methods** — singscore, AUCell, GSVA, ssGSEA; fry, mroast, GSEA, globaltest
-- [ ] **19. More external cohorts** — other LUAD arrays, CPTAC
-- [ ] **S3. Multiverse / specification-curve analysis**
-- [ ] **S6. Non-cancer data** — GTEx, pseudobulk, proteomics
-
-## E. Make the biology pay off (months 4–8)
-- [ ] **20. Replicate HNSC** in CPTAC HNSCC or GEO, pre-registered first
-- [ ] **21. Protein-level check** via CPTAC
-- [ ] **22. Causal test** — LKB1 re-expression in A549 or similar, from GEO
-- [ ] **23. DepMap/CCLE** — same programs without microenvironment
-- [ ] **24. Single-cell** — is bulk coherence composition or co-regulation?
-- [ ] **S1. Equivalence testing (TOST)** for H1 — "effects larger than X excluded"
-- [ ] **S2. Hierarchical model** across cohorts
-
-## F. Literature audit → reanalysis (months 5–9)
-- [ ] **25. Systematic audit** — pre-registered sample of 100 of 518, coding protocol, second coder, inter-rater agreement
-- [ ] **26. Reanalyze published claims** with public data; phrase as "does not survive calibration"
-
-## G. Software (finish by month 10)
-- [ ] **27. Add fixes to gscalibrate** — VIF correction, residual flag, hybrid rule, ROAST/CAMERA wrappers
-- [ ] **S5. Cox models + optimal cutpoints** — the workflow the audited papers actually use
-- [ ] **28. Bioconductor submission**
-- [ ] **29. Documentation** — end-to-end LUAD vignette, test coverage
-- [ ] **30. Real users**
-- [ ] **S7. Shiny app**
-- [ ] **S8. Reporting checklist** for authors and reviewers
-
-## H. External credibility (months 3–12)
-- [ ] **31. Mentor** with a computational biology lab
-- [ ] **32. Stay in touch with Smyth** — send the ROAST finding and VIF correction
-- [ ] **33. bioRxiv preprint, then submit**
-- [ ] **34. Present** — BioC poster, local seminar, ISEF-affiliated fair
-- [ ] **35. Compliance forms**
-- [ ] **S9. Teach it** — workshop, only if genuine
-
-## I. The application (months 10–13)
-- [ ] **36. Report around one story**
-- [ ] **37. Figure 1 legible in 10 seconds**
-- [ ] **38. Null result as a strength**
-- [ ] **39. Own contribution explicit**
-- [ ] **40. Essays showing the thinking**
-- [ ] **41. Non-specialist readers**
-
-## J. Interview (months 13–14)
-- [ ] **42. General science practice**
-- [ ] **43. Drill the hard questions** — why not CAMERA, isn't this Venet 2011, is HNSC confounded, why does the flag fire on true positives
+# Project checklist
+Updated 2026-09-25 · **16 of 50 done, 4 failed-and-reported, 1 retracted**
 
 ---
-## Weaknesses to close (from finalist comparison)
-1. **Tool diagnoses, doesn't fix** → items 10, 12, 14
-2. **No causal layer** → item 22
-3. **No plain-language line** → draft one sentence
-4. **Leadership outside research** → longest lead time, start now
+
+## DONE (16)
+
+**A. Verification**
+- [x] **3a. p-value formula** — was `b/n`, can return 0. Now `(b+1)/(n+1)`, Phipson & Smyth 2010.
+- [x] **3b. Fragile-step audit** — z-score direction +0.733, seed reproducible, no gene leakage into Tier 1, no ambiguous symbol mappings, `deficient` coded correctly.
+- [x] **4a. All stored p-values corrected** — 65% attrition unchanged at 28/43; all six survivors hold.
+- [x] **4b. Monte Carlo SEs** — and the discovery that earlier "eliminated" mechanisms were tested at 50–100 reps (SE ≈ 0.03), so they are "not supported at that resolution," not eliminated.
+
+**C. Diagnosis → fix**
+- [x] **9. MECHANISM IDENTIFIED.** The gene-randomization null conditions on the sample split, so it captures gene-sampling variation only. Within-split null SD 0.047; the real set's statistic varies across splits with SD 0.110. **The null is 2.3× too narrow.** Replicated: G2M ratio 2.67 (COADREAD), 2.12 (BRCA), 2.34 (LUAD); Notch control 1.45, 1.34.
+- [x] **12. Residual-coherence flag** — raw ρ 0.200 vs residual 0.003 for a pure effect; 0.554 vs 0.554 for genuine coherence. In the package.
+- [x] **13. ROAST diagnosis** — see RETRACTED.
+- [x] **THE CORRECTION** (not on the original list). Rescaling the within-split null to the observed across-split spread: type I error 0.18→0.08, 0.17→0.005, 0.13→0.065, with the uninflated control unchanged. Derived from the mechanism, not fitted.
+
+**D. Scale**
+- [x] **15. Plasmode** — real TCGA expression, random splits, no simulator. Supersedes all synthetic type I error numbers.
+- [x] **17 (partial). Regime map** — Hallmark × 4 cohorts (80% of BH-significant results fail); coherence across Hallmark, Reactome and GO:BP (88–92.5% of sets exceed any random draw).
+- [x] **19 (partial). External cohort** — GSE72094, different platform, floors 4.66–5.81 vs theoretical 1.96.
+
+**E. Biology**
+- [x] **S1. Equivalence bounds** — effects above 0.36 (LUAD) and 0.22 (STAD) excluded. The null is a bound, not a power failure.
+
+**F. Literature**
+- [x] **25 (partial). Audit** — 5 papers read in full, none reporting any correlation correction; adoption curve 2 → ~100 papers/year.
+
+**G. Software**
+- [x] **27 (partial). Package built** — `gscalibrate` 0.1.0, 7 tests passing, R CMD check clean, vignette, published.
+
+**H. Credibility**
+- [x] **32. Smyth contact** — three substantive replies. Confirmed the central finding; corrected two errors.
+
+---
+
+## FAILED AND REPORTED (4) — these are results, not gaps
+- [x] **10. VIF rescaling** — no exponent works; two cells need heavy correction, two are broken by any. **And decisively: the VIF predicts spread ratios of 1.15–4.05 while measured ratios are 0.93–1.17.** Wrong axis — it corrects gene-level dependence when the missing variance is sample-level.
+- [x] **11. Real-set null** — only 15 of 1,195 Reactome sets match lung on size and coherence; 7 match E2F. A null needs 60+.
+- [x] **22. Causal test** — **no adequate test possible**, not a null result. A549 transcribes mutant STK11 mRNA so restoration is invisible; that leaves 4 vs 2 samples in H2126.
+- [x] **S4-adjacent. Coherence as mechanism** — ρ = 0.14 vs type I error. True as a measurement, not the cause.
+
+## RETRACTED (1)
+- [x] **ROAST small-set over-rejection.** Smyth: *"roast() controls the type I error rate correctly for all gene set sizes."* Real data agreed with him. Third spurious result from that simulator. **Item 14's hybrid rule withdrawn with it.**
+
+---
+
+## REMAINING (34)
+
+### Immediate — this week
+- [ ] **Tighten the correction** — G2M overcorrects to 0.005; test rescaling variants at 300 reps
+- [ ] **7. Read Venet et al. 2011** — likely the closest ancestor, still unread
+- [ ] **6/8. Contribution statement** in one sentence, surviving Goeman & Bühlmann, CAMERA, Venet
+- [ ] **31. Mentor** — top priority; Bandyopadhyay follow-up is the best lead
+- [ ] **Reply to Tamayo** in own words about the AI question
+- [ ] **27b. Put the correction in the package**, replace the coherence-keyed `reliable` flag
+
+### Verification
+- [ ] **1. Clean-machine reproduction** — renv or Docker, one script regenerates every number
+- [ ] **2. Independent rerun** by another person
+- [ ] **5. OSF timestamp** (GitHub history can be rewritten)
+- [ ] **Withdraw grid-2 numbers** from the write-up; plasmode supersedes them
+
+### Scale
+- [ ] **16. Block-structured correlation** in any remaining synthetic work
+- [ ] **17b. Full regime map** — 33 TCGA types × 4 collections × 4 grouping types
+- [ ] **18. More methods** — singscore, AUCell, GSVA; fry, mroast, globaltest
+- [ ] **19b. More external cohorts** — CPTAC, other platforms
+- [ ] **S3. Multiverse / specification curve**
+- [ ] **S6. Non-cancer data** — GTEx, pseudobulk, proteomics
+
+### Biology
+- [ ] **20. Replicate HNSC** in CPTAC or GEO, pre-registered first
+- [ ] **21. Protein-level check** (CPTAC)
+- [ ] **23. DepMap/CCLE**
+- [ ] **24. Single-cell** — is bulk coherence composition or co-regulation?
+- [ ] **S2. Hierarchical model** across cohorts
+
+### Literature
+- [ ] **25b. Systematic audit** — pre-registered sample of 100 of 518, coding protocol, second coder
+- [ ] **26. Reanalyze published claims** with public data
+
+### Software
+- [ ] **S5. Cox models + optimal cutpoints** — the workflow the audited papers actually use
+- [ ] **28. Bioconductor submission**
+- [ ] **29. Documentation and coverage**
+- [ ] **30. Real users**
+- [ ] **S7. Shiny app**
+- [ ] **S8. Reporting checklist**
+
+### Credibility
+- [ ] **33. bioRxiv preprint, then submit**
+- [ ] **34. Present** — BioC, local seminar, ISEF
+- [ ] **35. Compliance forms**
+- [ ] **S9. Teach it**
+
+### Application
+- [ ] **36–41.** Report around one story · Figure 1 legible in 10 s · null as strength · own contribution explicit · essays · non-specialist readers
+- [ ] **42–43.** General science prep · drill the hard questions
+
+---
+
+## The story, as it now stands
+1. Pre-registered pan-cancer hypothesis. Not supported.
+2. The control killed 65% of the analysis's own BH-significant results — 80% across four cohorts on Hallmark.
+3. Seven candidate mechanisms tested and not supported.
+4. **The real mechanism: the null conditions on the sample split and is 2.3× too narrow.** Replicated in two held-out cohorts.
+5. A correction that follows from the mechanism and restores approximate calibration.
+6. A released tool.
+
+**Still missing:** the paper.
