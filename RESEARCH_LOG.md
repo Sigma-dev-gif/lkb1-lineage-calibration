@@ -1413,3 +1413,219 @@ Most coherent Hallmark sets: E2F targets 0.306, interferon-alpha response 0.280,
 
 ### Item 3b: audit passes on all five checks
 Score-to-expression correlation +0.733 (correct direction) · seed reproducible · zero scored genes leaking into Tier 1 draws · no ambiguous symbol mappings · `deficient` coded correctly with n = 129 in LUAD.
+
+## 2026-09-25 — Plasmode on real data: the mechanism, found by elimination
+
+Given that three simulation designs produced spurious results, the type I error question was redone with **no simulator**: real TCGA LUAD expression, random 26/74 splits of patients (a true null by construction), 100 replicates, empirical p against 100 matched-random draws.
+
+### Type I error is real and large, measured without simulation
+
+| Set | m | ρ | type I |
+|---|---|---|---|
+| liver (HPA) | 902 | 0.041 | **0.267** |
+| intestine | 671 | 0.061 | **0.250** |
+| HALLMARK_APICAL_JUNCTION | 200 | 0.069 | **0.233** |
+| HALLMARK_OXPHOS | 199 | 0.195 | 0.183 |
+| HALLMARK_E2F_TARGETS | 200 | 0.306 | 0.170 |
+| lung (HPA) | 137 | 0.245 | 0.100 |
+| HALLMARK_COAGULATION | 138 | 0.070 | 0.050 |
+| adrenal gland | 206 | 0.037 | 0.017 |
+
+**Up to 5× nominal, on real data, with a true null.** This does not depend on any simulator and supersedes the grid-2 numbers as the trustworthy version of the claim.
+
+### Five candidate mechanisms, all eliminated
+
+| Candidate | Spearman vs type I | Verdict |
+|---|---|---|
+| mean inter-gene correlation | 0.14 | **no** |
+| 95th percentile of pairwise ρ | 0.16 | no |
+| SD of pairwise ρ | 0.14 | no |
+| mean expression | 0.16 | no |
+| mean per-gene SD | −0.18 | no |
+| set size m | 0.55 | correlated but **not causal** |
+
+**Coherence is not the mechanism.** Liver at ρ = 0.041 gives 0.267; lung at ρ = 0.245 — six times more coherent — gives 0.100. The ρ = 0.245 vs 0.021 impossibility remains a true measurement, but it explains only why one particular repair fails, not why the null is wrong.
+
+**Size is not causal either.** With *random* gene sets as targets, type I error is flat across m = 25 to 1,500: 0.03, 0.05, 0.03, 0.06, 0.04, 0.05, 0.07. All nominal.
+
+### The decisive experiment
+
+| Target | m | type I |
+|---|---|---|
+| real liver | 902 | **0.31** |
+| random genes, same size | 902 | **0.04** |
+| liver, randomly halved | 450 | 0.25 |
+| liver, randomly quartered | 225 | 0.19 |
+
+A random 902-gene set is perfectly calibrated. A 225-gene *subset of liver* is inflated four-fold. **Size is not the variable — set identity is.** The 0.55 correlation with m was confounded: larger sets in these collections happen to be more strongly tissue-associated. The inflation degrades gradually under subsetting, so it is distributed across the program rather than carried by a few genes.
+
+### The mechanism
+
+The liver score correlates **0.40 with PC2 and −0.41 with PC5** of the LUAD transcriptome (PCs explaining 6.7% and 3.3% of variance).
+
+A real biological program loads on major axes of between-tumour variation. A random gene set averages across all axes and loads strongly on none. So a random split of patients will sometimes align with one of those axes — the program score moves, every random gene set stays flat, and the empirical null is too narrow.
+
+**This is Goeman & Bühlmann's competitive-test problem, stated concretely.** A competitive null assumes the tested set is exchangeable with random genes. A biological program that loads on a dominant axis of variation is never exchangeable, and no matching on size, expression or coherence can make it so.
+
+The competitive vs self-contained framing (item 6) is therefore not an organising device borrowed from the literature — **it is the mechanism**, and it should structure the paper.
+
+### Status changes
+- **Item 9 (derive the mechanism): substantially done**, by elimination plus the PC result. Needs formalising and replication in a held-out cohort.
+- **Item 11 (real-set null): FAILED.** Of 1,195 Reactome sets, only 15 match lung on size and coherence, 7 match E2F, 11 match EMT. A null needs 60+. Even a large real-set pool cannot supply matched comparators.
+- **Coherence argument demoted** from headline to a subsidiary point about why draw-matching specifically cannot work.
+- **The size finding is a hypothesis, not a result** — post hoc, one cohort, 34 sets. Pre-register and test in a held-out cohort before claiming it.
+
+### What the contribution list now contains
+1. 65% attrition in a pre-registered analysis; 80% across four cohorts on Hallmark
+2. The competitive-exchangeability mechanism, demonstrated by elimination on real data
+3. Two independent repairs attempted and shown to fail, with measured reasons
+4. The literature audit
+5. Replication on a second platform
+
+## 2026-09-25 — MECHANISM IDENTIFIED: the null conditions on the sample split
+
+### The measurement
+
+For HALLMARK_E2F_TARGETS in LUAD (m = 200):
+
+| Quantity | SD |
+|---|---|
+| Null coefficients, **random gene sets within one fixed sample split** (mean of 20 splits × 200 draws) | **0.047** |
+| Observed coefficient for the real set, **across 400 random sample splits** | **0.110** |
+| **Ratio** | **2.34** |
+
+**The gene-randomization null is 2.3× too narrow.** Comparing a statistic that varies with SD 0.110 against a null spread of 0.047 produces the measured type I error of 0.15–0.21.
+
+Within a fixed split the null is also biased: mean −0.039, not zero.
+
+### Why
+
+Random gene sets drawn within a fixed split share the patient labels. They therefore capture **gene-sampling variation only**. They cannot capture how a real biological program responds to *which patients* land in each group — and that second source of variability is real and roughly twice as large.
+
+A random gene set does not respond to patient composition, because it has no coherent biology to respond with. A real program does. The competitive null assumes exchangeability between the two, and that assumption fails on the sample axis, not the gene axis.
+
+### This explains every earlier failure
+
+| Earlier candidate | Why it correlated | Why it was not the cause |
+|---|---|---|
+| mean coherence | coherent sets respond more to patient composition | ρ = 0.14 overall; liver ρ = 0.041 gives 0.267 while lung ρ = 0.245 gives 0.100 |
+| set size | larger sets are more strongly tissue-associated | random sets calibrated at all sizes, 25 → 1500 |
+| PC loading | tracks the same thing | replicated with the **wrong sign**, −0.44 |
+| expression profile | — | \|r\| < 0.2 |
+| VIF term (m−1)(ρ_set − ρ_null) | correlates with responsiveness | **predicted spread ratios of 1.15–4.05; measured 0.93–1.17.** The inflation it predicts does not exist |
+
+**And it explains why the VIF rescaling failed (item 10):** the VIF corrects for gene-level dependence. The missing variance is at the sample level. Wrong axis.
+
+### Consequences
+
+1. **The fix is not a better gene-randomization null.** It is sample permutation or rotation, which vary the sample assignment and therefore capture the missing variance component. This is why ROAST and sample-permutation GSEA exist.
+2. **This is Goeman & Bühlmann's competitive vs self-contained distinction, measured.** The framing is not borrowed organisation — it is the mechanism, quantified at 2.3× on real data.
+3. **`gscalibrate` must carry this.** The `reliable` flag keyed to coherence is measuring the wrong quantity. The package should either estimate the across-split variance directly and widen the null accordingly, or refuse and defer to rotation testing.
+4. The measured spread ratio is itself a usable diagnostic: compute the observed statistic's SD across random splits, compare to the within-split null SD, and report the ratio.
+
+### Precision note
+All conclusions above rest on ≥200 replicates. Earlier "eliminated" mechanisms were tested at 50–100 replicates (SE ≈ 0.03), so those should be reported as **"not supported at the resolution tested"**, not eliminated — with the exception of the VIF spread prediction, which fails by a factor of 3–4 and is decisively wrong.
+
+### Status
+- **Item 9 (derive the mechanism): DONE.** Identified, measured, and consistent with every prior negative result.
+- Needs: replication in a held-out cohort, formalisation of the variance decomposition, and a corrected estimator.
+
+## 2026-09-25 — A WORKING CORRECTION, replicated
+
+### Decomposition: both operations are required
+
+The within-split null is wrong in two ways — biased mean (−0.039) and too-narrow spread (2.3×). Testing each fix separately, LUAD, 300 reps:
+
+| Set | plain | centre only | scale only | **both** |
+|---|---|---|---|---|
+| E2F targets | 0.153 | 0.313 | 0.020 | **0.043** |
+| G2M checkpoint | 0.137 | 0.353 | 0.010 | **0.047** |
+| P53 pathway | 0.120 | 0.333 | 0.010 | **0.050** |
+| Notch (uninflated control) | 0.047 | 0.103 | 0.017 | **0.053** |
+
+**Centering alone makes it dramatically worse** (0.31–0.35): removing the offset without widening the null leaves a too-narrow distribution centred on zero, which rejects more often. **Scaling alone overcorrects** (0.01–0.02). **Both together land at nominal** across all four sets.
+
+The earlier 0.005 for G2M came from estimating the across-split SD at 200 reps; at 300 it stabilises.
+
+### The correction
+
+For a tested set:
+1. Estimate **σ_across** — the SD of the set's own coefficient across many random sample splits.
+2. Within each split, compute the gene-randomization null `nb`.
+3. Replace it with `(nb − mean(nb)) × σ_across / sd(nb)`.
+4. Compute the empirical p against the corrected null.
+
+This adds the sample-level variance component the gene-randomization null cannot see, and removes the split-specific offset.
+
+### Replication in two held-out cohorts
+
+| Cohort | Set | m | plain | corrected |
+|---|---|---|---|---|
+| COADREAD | G2M checkpoint | 199 | **0.30** | **0.045** |
+| COADREAD | hypoxia | 196 | 0.12 | 0.050 |
+| COADREAD | Notch (control) | 32 | 0.04 | 0.055 |
+| BRCA | G2M checkpoint | 199 | 0.19 | 0.055 |
+| BRCA | hypoxia | 199 | 0.12 | 0.080 |
+| BRCA | Notch (control) | 32 | 0.03 | 0.035 |
+
+All corrected values fall between 0.035 and 0.080. **The uninflated control is unaffected in both cohorts**, so the correction does not over-fire where nothing was wrong. COADREAD G2M goes from six-fold inflation to nominal.
+
+### Where this leaves the project
+
+The full arc now exists:
+1. Phenomenon measured on real data with true nulls — up to 5× nominal, 80% of BH-significant results failing across four cohorts.
+2. Seven candidate mechanisms tested and not supported.
+3. **Mechanism identified** — the null conditions on the sample split, missing a variance component 2.3× larger than the one it captures.
+4. **Correction derived from the mechanism**, not fitted.
+5. **Replicated** in two held-out cohorts, with controls.
+6. A released tool to carry it.
+
+### Next
+- Implement in `gscalibrate`, replacing the coherence-keyed `reliable` flag.
+- Cost note: σ_across requires ~300 extra model fits per set. Cheap relative to scoring.
+- Compare against `roast` on the same sets — rotation should already capture this variance component, so the two should agree where both apply. That is the natural validation.
+
+## 2026-09-25 — Verification status of the mechanism and correction, stated plainly
+
+These were found and corrected on the same day, after six candidate mechanisms failed and the ROAST claim was retracted. They are now the headline, so their verification status is recorded explicitly.
+
+| Check | Status |
+|---|---|
+| **Sufficient replicates** | **Done.** All mechanism and correction figures at 200–300 reps (SE 0.013–0.017), enough to resolve 0.05 from 0.10. Earlier 50–100-rep results are flagged as "not supported at that resolution," not eliminated. |
+| **Held-out test** | **Done.** Ratio replicated in COADREAD (2.67) and BRCA (2.12) against LUAD (2.34), with an uninflated control at 1.34–1.45. Correction replicated in the same two cohorts across six cells, all landing 0.035–0.080. Neither cohort was used to develop the mechanism. |
+| **Independent validation** | **Done, and stronger than planned.** The corrected p-values agree with `limma::roast` on all four sets tested (0.033/0.020, 0.033/0.047, 0.020/0.040, 0.073/0.073). Two methods sharing no machinery reaching the same answer. |
+| **Pre-registration** | **Partial.** The ratio-replication prediction was written before running it. The correction's calibration was not pre-registered — derived and tested the same day. **Reported as post hoc with held-out confirmation, not as pre-registered.** |
+| **Independent rerun by another person** | **Not done.** Nobody has re-run any of this. Should be the first thing a second party checks. |
+
+Three of five clear; the two gaps are named rather than glossed.
+
+## 2026-09-25 — Item S5: the correction extends to Cox models
+
+This matters because Cox regression with per-sample scores is the workflow the literature audit actually documents — PESSA runs it across 13,434 gene sets; the CRC stemness paper ran 26 Cox tests with no correction.
+
+**Setup.** TCGA LUAD, 485 samples with usable overall survival, 171 events. True null by permuting survival times across patients.
+
+### The inflation carries over
+
+| Set | m | type I (uncorrected) |
+|---|---|---|
+| G2M checkpoint | 199 | **0.167** |
+| Notch (control) | 32 | 0.033 |
+
+Same pattern and magnitude as the linear-model case.
+
+### The correction works, but less completely
+
+| Set | plain | corrected |
+|---|---|---|
+| G2M checkpoint | 0.133 | **0.067** |
+| Hypoxia | 0.193 | **0.073** |
+| Notch (control) | 0.060 | 0.067 |
+
+Inflation roughly halved; the uninflated control is unaffected. But corrected values sit at 0.067–0.073 rather than the 0.04–0.05 achieved with linear models. At 150 reps the SE is about 0.02, so 0.073 is marginally high rather than clearly wrong.
+
+**Two candidate reasons, neither tested:** Cox coefficients are not symmetric the way OLS coefficients are, so centre-and-rescale is a cruder approximation; and permuting survival times scrambles the censoring pattern along with the outcome, which may not be as clean a null as permuting a binary label.
+
+**Reported as: the correction extends to Cox and substantially reduces inflation, but does not fully restore nominal calibration in this setting.** A limitation, not a success to overstate.
+
+Item S5 partly closed. Package support for Cox should carry this caveat.
