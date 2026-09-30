@@ -1629,3 +1629,50 @@ Inflation roughly halved; the uninflated control is unaffected. But corrected va
 **Reported as: the correction extends to Cox and substantially reduces inflation, but does not fully restore nominal calibration in this setting.** A limitation, not a success to overstate.
 
 Item S5 partly closed. Package support for Cox should carry this caveat.
+
+## 2026-09-27 — CORRECTION WITHDRAWN. Goeman confirms the framing; theory explains the failure.
+
+### Jelle Goeman replied
+
+He confirmed the framing directly: regression on per-sample scores gives valid **self-contained** tests; the random-gene-set comparison attempts the **competitive** question and is anti-conservative because the tested set is not random — it is correlated.
+
+He pointed to Ebrahimpoor, Spitali, Hettne, Tsonaka & Goeman (2020), *Briefings in Bioinformatics* 21(4):1302–1312, "Simultaneous Enrichment Analysis of all Possible Gene-sets."
+
+**Permission not yet requested to quote him.** Until it is, cite the published papers that make the same points, not the email.
+
+### The restandardization failure was theoretically inevitable
+
+From that paper: *"Maciejewski convincingly argued that in general the resulting methods do not in fact test the competitive but the self-contained null"* — referring to methods that avoid the independence assumption by switching to subject permutation. Maciejewski H (2014), *Briefings in Bioinformatics* 15(4):504–18.
+
+**That is exactly what was built.** Centre from gene randomization, scale from sample permutation — a hybrid. And it is exactly what the data showed: for Notch in LUAD, competitive p = 0.110 became restandardized p = **0.003**, collapsing to the self-contained answer (nominal p = 5×10⁻¹³).
+
+Not an implementation bug. A known theoretical result, published in 2014, that should have been found before building the thing.
+
+The paper also notes that lack of FWER control for the competitive null arises *"only when features within S are much more strongly correlated than features outside S"* — the theoretical statement of the coherence measurement (real programs ρ up to 0.245, random draws capped at 0.021).
+
+### Consequences
+
+1. **The correction is withdrawn from the contribution list.** Three attempts, all failed: VIF rescaling (predicted spread ratios 1.15–4.05 against measured 0.93–1.17), centre-and-scale (collapses to the nominal test), restandardization (tests the self-contained null, per Maciejewski).
+2. **`gscalibrate` must not ship it.** Remove, or relabel unambiguously as a self-contained test.
+3. **Precise wording.** It is *not* true that competitive correction is impossible — CAMERA estimates a variance inflation factor, rSEA uses closed testing under dependence. The accurate claims are narrower and both citable:
+   - Combining sample permutation with gene randomization cannot yield a competitive test (Maciejewski 2014).
+   - Matching random draws to a real set's coherence is structurally impossible (measured: 0.245 vs a 0.021 ceiling).
+
+### The contribution, as it now stands
+1. The uncorrected competitive comparison is widely used with per-sample scores — five papers, none reporting a correction, ~100 papers/year.
+2. It fails badly and quantifiably — 80% of BH-significant results across four cohorts; type I error to 0.30 measured on real data with true nulls.
+3. The two obvious fixes cannot work, for principled and attributed reasons.
+4. Existing valid methods (CAMERA, ROAST, rSEA) compared on the same data.
+
+Narrower than "a new correction." Every line defensible.
+
+### Next: rSEA as a comparator
+**Note it does not take per-sample scores.** It takes gene-level p-values and uses closed testing to bound the proportion of truly active genes per set. The workflow becomes: per-gene tests (limma), then rSEA on those p-values. It answers a related but different question, so disagreements need care.
+
+**Pre-registered prediction, written before running it:** rSEA's competitive results will agree with CAMERA across the 99 tests, rejecting few or none of the 28 that failed Tier 1.
+
+### References to add
+- Maciejewski H (2014). Gene set analysis methods: statistical models and methodological differences. *Brief Bioinform* 15(4):504–18.
+- Ebrahimpoor M et al. (2020). Simultaneous enrichment analysis of all possible gene-sets. *Brief Bioinform* 21(4):1302–12.
+- Debrabant B (2017). The null hypothesis of GSEA. *Bioinformatics* 33(9):1271–7.
+- Efron B, Tibshirani R (2007). On testing the significance of sets of genes. *Ann Appl Stat* 1(1):107–29.
