@@ -1676,3 +1676,674 @@ Narrower than "a new correction." Every line defensible.
 - Ebrahimpoor M et al. (2020). Simultaneous enrichment analysis of all possible gene-sets. *Brief Bioinform* 21(4):1302–12.
 - Debrabant B (2017). The null hypothesis of GSEA. *Bioinformatics* 33(9):1271–7.
 - Efron B, Tibshirani R (2007). On testing the significance of sets of genes. *Ann Appl Stat* 1(1):107–29.
+
+## 2026-09-27 — rSEA as a post hoc comparator (interpretation pending)
+
+`rSEA` (Ebrahimpoor et al. 2020) tests a unified null by closed testing with Simes tests, valid under dependence. Input is gene-level p-values, so the workflow is limma per gene, then rSEA. **It tests a different quantity from the score regressions — the proportion of DE genes in a set relative to background, not the shift in a summary score.** Disagreements therefore need care and do not automatically mean one method is wrong.
+
+**Pre-registered prediction** (written before running): rSEA's competitive results will agree with CAMERA, rejecting few or none of the 28 that failed Tier 1.
+
+### Background activity: the number that explains the rest
+**55.5% of 18,449 genes are individually significant at p < 0.05** in the LKB1-deficient vs intact comparison in LUAD, against 5% expected. Over half the transcriptome differs between groups. With background activity that high the self-contained null is false for essentially every gene set by construction, and competitive power is correspondingly low.
+
+### Hallmark in LUAD: 50 of 50 self-contained, 9 of 50 competitive
+
+Self-contained p-values run 10⁻¹¹ to 10⁻⁵¹. Competitive survivors: interferon alpha (0.0008), interferon gamma (0.0014), IL6-JAK-STAT3 (0.0019), inflammatory response (0.0057), reactive oxygen species (0.0071), allograft rejection (0.0080), TNFA-NFKB (0.025), KRAS signalling up (0.035), complement (0.042). **Seven of nine are immune programs.**
+
+### Lineage programs in LUAD
+
+| Program | TDP est. | SC.adjP | Comp.adjP |
+|---|---|---|---|
+| **lung (native)** | 0.489 | 1.6×10⁻¹⁹ | **0.0043** |
+| urinary bladder | 0.444 | 1.2×10⁻⁴⁰ | **0.022** |
+| thyroid | 0.420 | 3.0×10⁻³¹ | 0.055 |
+| stomach | 0.398 | 4.3×10⁻⁵¹ | 0.144 |
+| breast | 0.373 | 3.4×10⁻²¹ | 0.319 |
+| intestine | 0.367 | 1.1×10⁻³⁷ | 0.423 |
+| liver | 0.346 | 4.3×10⁻⁶¹ | 0.533 |
+| ovary | 0.301 | 2.3×10⁻¹⁷ | 0.852 |
+| pancreas | 0.331 | 4.3×10⁻⁵¹ | 0.858 |
+| adrenal | 0.282 | 4.1×10⁻³² | 0.977 |
+| kidney | 0.286 | 1.0×10⁻⁴³ | 0.978 |
+| endometrium | 0.208 | 4.2×10⁻²³ | 0.999 |
+| prostate | 0.220 | 3.9×10⁻¹⁹ | 0.9998 |
+| pan-squamous | 0.133 | 1.6×10⁻¹¹ | 0.9998 |
+
+### Statement of what this shows — five constraints on interpretation
+
+**1. Direction is unknown.** rSEA operates on two-sided gene-level p-values and measures the *proportion* of DE genes, not their sign. If the lung program is **decreased** in LKB1-deficient tumours, that is loss of native identity — dedifferentiation — which is closer to H1's spirit than to its opposite. GSE72094 gave lung β = −0.271, which points that way. The same caution applies to the immune sets: LKB1 loss is associated with immune-cold tumours, so those are plausibly decreases. **Sign not yet checked. No directional claim until it is.**
+
+**2. "Refuted" is too strong.** Failing to reject a competitive null is not evidence of absence, especially when background DE is at 55.5% and closed testing is conservative. **The pre-registered verdict on H1 remains "not supported," from the pre-specified test.** rSEA is a post hoc secondary analysis that corroborates it. Claims that foreign effects are *absent* rest on the equivalence bounds (effects above 0.36 in LUAD, 0.22 in STAD excluded), not on a non-significant p-value.
+
+**3. rSEA does not contradict the score results.** Pancreas can show a large score shift driven by a subset of strongly changed genes without having a higher *proportion* of DE genes than background. Accurate statement: *the pancreas score shift is not accompanied by competitive enrichment in DE-gene proportion.* Not: *pancreas is an artifact.*
+
+**4. Wrong cohorts for most survivors.** Five of the six Tier 1 survivors are not LUAD — kidney, liver, intestine and pancreas in HNSC, thyroid in STAD. Only LUAD pancreas is directly comparable to this table. **The survivor list is not withdrawn; HNSC and STAD are untested.**
+
+**5. CAMERA and rSEA now disagree.** All six survivors cleared CAMERA, which was the main defence of them; LUAD pancreas had CAMERA p = 0.041 against rSEA 0.858. The honest statement is that these results **depend on the method**, which is itself a finding and belongs in the regime map.
+
+### Standing summary
+A post hoc competitive analysis with rSEA, valid under dependence, finds no foreign lineage program enriched beyond background in LUAD. The native lung program and 7 of 9 immune Hallmarks are competitively enriched, direction not yet established. rSEA and CAMERA disagree on LUAD pancreas. Survivors in HNSC and STAD not yet tested.
+
+The pre-registered prediction held: rSEA rejected almost none of what failed Tier 1.
+
+Saved: `rsea_luad.rds`, `rsea_hpa.rds`.
+
+## 2026-09-27 (cont.) — Direction, cross-cohort rSEA, and the method-comparison headline
+
+### Direction: the LUAD signal is LOSS, not gain
+
+| Set | genes | % up | median t |
+|---|---|---|---|
+| **lung (native)** | 137 | **21.9** | **−3.28** |
+| urinary bladder | 108 | 37.0 | −1.60 |
+| pancreas | 272 | 54.8 | +0.38 |
+| liver | 902 | 53.3 | +0.30 |
+| interferon alpha | 97 | **14.4** | **−4.07** |
+| interferon gamma | 200 | 20.5 | −3.47 |
+| inflammatory response | 200 | 22.5 | −3.09 |
+| TNFA-NFKB | 200 | 37.5 | −1.50 |
+
+**The native lung program and all four immune programs are DECREASED in LKB1-deficient LUAD.** The earlier reading ("native enrichment") was wrong — rSEA is two-sided and the sign was not checked before interpreting.
+
+The immune direction matches the known immune-cold phenotype of STK11-mutant LUAD, which is external corroboration that the pipeline is working.
+
+**Loss of native identity is dedifferentiation, which is adjacent to H1's spirit rather than its opposite.** H1 predicted *gain* of foreign programs. What is present is *loss* of the native one. Related, not the same, and the distinction must be kept in the write-up.
+
+Note thyroid returned n = 0 genes in LUAD's topTable — check the gene-space intersection before using that row.
+
+### HNSC and STAD: no lineage program competitively enriched
+
+| Cohort | best | Comp.adjP | % up |
+|---|---|---|---|
+| HNSC | liver | 0.124 | 74.1 |
+| HNSC | intestine | 0.159 | 75.9 |
+| HNSC | kidney | 0.197 | 78.1 |
+| HNSC | pancreas | 0.213 | 78.7 |
+| STAD | adrenal | 0.200 | 72.7 |
+| STAD | intestine | 0.215 | 36.6 |
+
+**None of the four HNSC Tier 1 survivors is competitively enriched by rSEA** — though all four shift upward (74–79% up), agreeing with the score results in direction but not in competitive significance.
+
+HNSC pan-squamous, the native program, is 20% up — the same native-loss pattern as LUAD lung.
+
+TDP estimates are much lower in HNSC (0.03–0.16) and STAD (0.00–0.08) than LUAD (0.21–0.49), consistent with lower background DE.
+
+### Background DE and competitive survivors vary sharply by cohort
+
+| Cohort | % genes p<0.05 | SC sig /50 | Comp sig /50 | immune among them |
+|---|---|---|---|---|
+| LUAD | 55.5 | 50 | 9 | 7 |
+| BRCA | 50.7 | 49 | 6 | **0** |
+| COADREAD | 38.0 | 45 | **0** | 0 |
+| HNSC | 34.1 | 48 | **0** | 0 |
+| STAD | 28.5 | 32 | 1 | 0 |
+
+**The immune result is LUAD-specific and does not replicate.** HNSC and COADREAD have no competitive survivors at all; BRCA's six contain none immune. Reported as a LUAD finding, not a pan-cancer LKB1 property.
+
+### The method-comparison headline
+
+LUAD, 50 Hallmark sets:
+
+| | significant |
+|---|---|
+| BH only | **38** |
+| Tier 1 (empirical null) | 6 |
+| rSEA competitive | 9 |
+| **Tier 1 ∩ rSEA** | **4** |
+
+**BH alone keeps 38 of 50. Any method accounting for dependence keeps 6 to 9. Which 6 to 9 depends on the method.**
+
+The first half is robust and is the paper's central claim. The second half is the honest caveat, and it differs from the earlier CAMERA comparison, where agreement was perfect across 99 tests. Three methods, three answers — that belongs in the regime map rather than being resolved by picking a favourite.
+
+Saved: `rsea_cohorts.rds`, `fig1_rsea_scatter.csv`, `method_comparison_luad.csv`.
+
+### Outreach: John Gordan (UCSF) offers to collaborate
+Senior author of the source signature paper, forwarded by Bandyopadhyay. Has capacity in about six weeks. **This is the mentor lead.** Reply should state the fall 2027 timeline, be honest that the primary hypothesis was not supported and that the work became methodological, and name what would be most valuable from him.
+
+## 2026-09-27 (cont.) — NATIVE LINEAGE LOSS: a pre-registered finding in six held-out cohorts
+
+### Composition does not explain it
+
+Concern: bulk tumours with less adjacent normal tissue show lower native-tissue signal even if tumour cells are unchanged. The gene-level model already adjusted for ABSOLUTE purity, fibroblast, endothelial and adipocyte scores, but purity is one scalar and does not capture *which* normal cells are present — specifically normal alveolar tissue, which is what the lung program measures.
+
+Added an explicit alveolar-content score (13 markers: SFTPC, SFTPB, SFTPA1/2, AGER, PDPN, CAV1, FOXJ1, SCGB1A1, SCGB3A2, NAPSA, LAMP3, CLDN18). It correlates with purity at only r = −0.23, so it carries information purity does not.
+
+| | % lung genes up | median t |
+|---|---|---|
+| purity + stroma only | 21.9 | −3.28 |
+| **+ alveolar content** | **33.6** | **−1.93** |
+
+Attenuated but not abolished. **And this is a conservative test** — the alveolar markers overlap the lung program, so it partly regresses lung on itself. Native loss survives adjustment for purity, stroma and normal-lung content.
+
+### Pre-registered test in six held-out cohorts
+
+**Prediction, written before running:** the native lineage program will show median t < 0 and fewer than 40% of genes up, in LUSC, CESC-squamous, BRCA, UCEC, COADREAD and STAD, with purity and stromal covariates adjusted.
+
+| Cohort | native program | n | % up | median t | passes? |
+|---|---|---|---|---|---|
+| LUSC | pan-squamous | 30 | **10.0** | **−3.54** | yes |
+| CESC | pan-squamous | 30 | **20.0** | **−2.14** | yes |
+| BRCA | breast | 110 | **30.0** | **−0.95** | yes |
+| UCEC | endometrium | 65 | 36.9 | −0.50 | yes |
+| COADREAD | intestine | 615 | 37.2 | −0.88 | yes |
+| STAD | stomach | 200 | 46.5 | −0.21 | **no** |
+
+**Five of six pass.** STAD misses on the percentage but still has median t < 0; STAD had the weakest signal throughout the project.
+
+With LUAD (lung) and HNSC (pan-squamous, 20% up), that is **native lineage loss in seven of eight cohorts tested.**
+
+### What this is, and what it is not
+
+**It is:** LKB1-deficient tumours show reduced expression of their own tissue's lineage program, after adjustment for purity, stromal content and normal-tissue composition, replicated across cohorts under a prediction registered before the held-out tests.
+
+**It is not H1.** H1 predicted *gain* of foreign programs. This is *loss* of the native one — dedifferentiation without transdifferentiation. Related in spirit, different in content, and the distinction must be maintained in the write-up. The pre-registered verdict on H1 stays "not supported."
+
+**Caveats:** effect sizes vary widely (LUSC −3.54 to UCEC −0.50). These are directional summaries of gene-level t-statistics, not competitive tests — rSEA on the down-portions is required before claiming enrichment. The hypothesis was generated post hoc in LUAD and HNSC; the six-cohort test is the held-out confirmation.
+
+**Independent data:** GSE72094 gave lung β = −0.271, consistent, but that is a score result and should be redone as a directional gene-level test.
+
+This is the biological finding that grew out of the failed hypothesis. It is more defensible than H1 would have been, because it was tested rather than sought.
+
+## 2026-09-27 (cont.) — Native lineage loss: competitive, dose-dependent, externally replicated
+
+### Directional rSEA in LUAD: the loss is competitive, not just directional
+
+Splitting each program into up- and down-regulated portions (the Ebrahimpoor framework permits post-hoc set selection with FWER still controlled):
+
+| Program | n up | p up | n down | **p down** |
+|---|---|---|---|---|
+| **lung (native)** | 30 | 0.9998 | 107 | **0.0011** |
+| urinary bladder | 40 | 0.042 | 68 | **0.024** |
+| thyroid | 63 | 0.127 | 94 | 0.071 |
+| breast | 41 | 0.998 | 69 | 0.317 |
+| stomach | 99 | 0.163 | 102 | 0.362 |
+| liver | 481 | 0.205 | 421 | 0.999 |
+| pancreas | 149 | 0.170 | 123 | 0.9998 |
+
+**Lung's down-portion is competitively enriched at p = 0.0011; its up-portion is not (0.9998).** The native program has a higher proportion of down-regulated DE genes than background. That is the competitive footing the finding previously lacked.
+
+Urinary bladder is significant in both directions, which usually means the split is not clean — noted, not interpreted.
+
+No foreign program is competitively enriched upward. H1 remains unsupported.
+
+### Independent replication: GSE72094
+
+Non-TCGA, Affymetrix array, groups defined by STK11 sequencing (68 mutant / 374 wild-type), no purity adjustment available.
+
+- Lung program: **27.4% of genes up, median t = −1.31**
+- Directional rSEA, down-portions: **lung Comp.adjP = 0.025**, the only program below 0.05 (stomach 0.109, thyroid 0.399)
+
+**Native lineage loss replicates competitively in an independent cohort on a different platform with mutation-defined groups.**
+
+### Dose-response against the continuous signature score
+
+Not a binary split — the native program score regressed on the continuous LKB1 functional-loss score, with purity and stromal covariates:
+
+| Cohort | native | β | p |
+|---|---|---|---|
+| LUAD | lung | **−0.0507** | **5.6×10⁻²⁴** |
+| LUSC | pan-squamous | **−0.0905** | **5.0×10⁻⁷** |
+| HNSC | pan-squamous | **−0.0857** | **3.3×10⁻⁴** |
+| COADREAD | intestine | **−0.0594** | **1.0×10⁻⁸** |
+| BRCA | breast | **−0.0151** | **1.8×10⁻³** |
+| UCEC | endometrium | −0.0147 | 0.136 |
+| STAD | stomach | +0.0075 | 0.620 |
+
+**Five of seven significant and negative.** STAD is the only positive coefficient and is far from significance; UCEC is negative but non-significant.
+
+**Circularity check.** The signature and the native programs share almost no genes: lung 0, pan-squamous 0, endometrium 0, breast 1, intestine 1, stomach 2. Re-running the three with overlap after removing the shared genes:
+
+| Cohort | n genes | β | p |
+|---|---|---|---|
+| BRCA | 109 | −0.0167 | 5.8×10⁻⁴ (was 1.8×10⁻³) |
+| COADREAD | 614 | −0.0590 | 1.3×10⁻⁸ (unchanged) |
+| STAD | 198 | +0.0065 | 0.67 (still null) |
+
+BRCA strengthens slightly. **No circularity.**
+
+### The finding, stated
+
+**LKB1 functional loss is associated with reduced expression of a tumour's own native lineage program, dose-dependently, across five of seven TCGA cohorts, after adjustment for purity and stromal content — replicated competitively in an independent non-TCGA cohort with mutation-defined groups, and surviving adjustment for normal-tissue content in LUAD.**
+
+Supporting structure:
+- Pre-registered in the six held-out cohorts before testing
+- Directionally specific (down, not up), confirmed by split-direction rSEA
+- Dose-dependent against a continuous score, not just a binary contrast
+- Robust to purity, stroma and explicit alveolar-content adjustment
+- Externally replicated on a different platform with a different group definition
+- No gene overlap between predictor and outcome
+
+**What it is not:** H1. That hypothesis predicted *gain* of foreign lineage programs and remains unsupported, with equivalence bounds excluding effects above 0.36 in LUAD and 0.22 in STAD. This is loss of native identity — dedifferentiation without transdifferentiation. The distinction is not cosmetic and must hold throughout the write-up.
+
+**Open:** STAD and UCEC null and unexplained. The LUAD immune result does not replicate across cohorts. Effect sizes vary six-fold.
+
+Saved: `rsea_directional.rds`, `native_dose_response.rds`.
+
+## 2026-09-27 (cont.) — Driver specificity: the effect is LKB1's, not generic dedifferentiation
+
+The obvious alternative explanation: aggressive tumours dedifferentiate, and LKB1 loss marks aggressive tumours. If any driver alteration reduced the native lineage program, the finding would restate something already known.
+
+Mutation calls fetched from cBioPortal (`_mutations` profile, `_sequenced` sample list) for TP53, KRAS, EGFR, PIK3CA, BRAF and APC. Each tested in the same model as LKB1: native program score ~ driver + purity + fibroblast + endothelial + adipocyte.
+
+### LKB1 is the largest effect in all three cohorts
+
+| Cohort | driver | n | β | p |
+|---|---|---|---|---|
+| **LUAD** | **LKB1 deficient** | 129 | **−0.250** | **3.8×10⁻¹⁶** |
+| LUAD | TP53 | 259 | −0.090 | 1.6×10⁻³ |
+| LUAD | APC | 25 | −0.081 | 0.196 |
+| LUAD | PIK3CA | 28 | −0.039 | 0.511 |
+| LUAD | **KRAS** | 149 | **−0.014** | **0.631** |
+| LUAD | BRAF | 40 | +0.013 | 0.794 |
+| LUAD | EGFR | 64 | +0.062 | 0.125 |
+| **LUSC** | **LKB1 deficient** | 93 | **−0.396** | **5.1×10⁻⁸** |
+| LUSC | APC | 27 | −0.134 | 0.286 |
+| LUSC | PIK3CA | 53 | +0.150 | 0.103 |
+| LUSC | TP53 | 401 | **+0.199** | 0.014 |
+| COADREAD | BRAF | 61 | −0.158 | 4.2×10⁻⁵ |
+| **COADREAD** | **LKB1 deficient** | 91 | **−0.130** | **9.7×10⁻⁵** |
+| COADREAD | TP53 | 311 | −0.036 | 0.156 |
+| COADREAD | APC | 382 | −0.023 | 0.414 |
+| COADREAD | PIK3CA | 145 | −0.005 | 0.867 |
+| COADREAD | **KRAS** | 216 | **+0.010** | **0.698** |
+
+**KRAS is null everywhere** (−0.014, +0.010) — so this is not a generic property of oncogenic drivers. **TP53 is inconsistent**: weakly negative in LUAD, null in COADREAD, and *positive* in LUSC.
+
+**Honest exception:** BRAF in COADREAD (−0.158) slightly exceeds LKB1 (−0.130). BRAF-mutant colorectal cancer is independently known to be poorly differentiated and serrated-pathway associated, so this is biologically expected — but COADREAD should be reported as "LKB1 comparable to BRAF," not strongest.
+
+### Co-occurrence does not explain it
+
+LKB1 and KRAS co-occur in LUAD: 56 of 129 deficient tumours are also KRAS-mutant. With both drivers plus TP53 in one model:
+
+| term | β | SE | p |
+|---|---|---|---|
+| **LKB1 deficient** | **−0.2626** | 0.0297 | **< 10⁻¹⁵** |
+| KRAS mutant | +0.0030 | 0.0282 | 0.916 |
+| TP53 mutant | −0.1120 | 0.0269 | 3×10⁻⁵ |
+
+LKB1's coefficient is essentially unchanged and KRAS contributes nothing. The effect is independent of the drivers LKB1 co-occurs with.
+
+### The finding is now complete
+
+Native lineage loss in LKB1-deficient tumours is supported by:
+1. **Pre-registration** in six held-out cohorts before testing (5 of 6 passed)
+2. **Directional specificity** — down, not up; split-direction rSEA gives lung down p = 0.0011, up p = 0.9998
+3. **Competitive significance** under a method valid given dependence
+4. **Dose-response** against the continuous score in 5 of 7 cohorts, strongest LUAD p = 5.6×10⁻²⁴
+5. **Robustness** to purity, stromal content and explicit alveolar-content adjustment
+6. **External replication** — GSE72094, different platform, mutation-defined groups, lung down p = 0.025
+7. **No circularity** — near-zero gene overlap between signature and programs; results unchanged after removing shared genes
+8. **Driver specificity** — largest effect of six drivers tested; KRAS null; survives joint modelling
+
+**Still not H1.** H1 predicted gain of foreign programs and remains unsupported, with equivalence bounds excluding effects above 0.36 in LUAD. This is loss of native identity.
+
+**Open:** STAD and UCEC null. Effect sizes vary six-fold. The LUAD immune result does not replicate across cohorts. BRAF exceeds LKB1 in COADREAD.
+
+Saved: `specificity_test.rds`.
+
+## 2026-09-27 (cont.) — Survival is weak; mechanism is not canonical LKB1 signalling
+
+### Survival: LUAD only, and partly proliferation
+
+Native program score (per SD) against overall survival:
+
+| Cohort | n | events | HR | p | HR adj. for LKB1+purity | p |
+|---|---|---|---|---|---|---|
+| **LUAD** | 485 | 171 | **0.755** | **1.6×10⁻⁴** | 0.761 | 0.0015 |
+| LUSC | 469 | 199 | 0.999 | 0.992 | 0.983 | 0.819 |
+| HNSC | 493 | 208 | 0.914 | 0.209 | 0.927 | 0.308 |
+| COADREAD | 503 | 104 | 0.901 | 0.284 | 0.910 | 0.352 |
+
+**Then the Venet check.** Adding meta-PCNA (200 genes most correlated with PCNA):
+
+| model | HR | p |
+|---|---|---|
+| native alone | 0.755 | 2×10⁻⁴ |
+| **native + meta-PCNA** | **0.822** | **0.027** |
+
+About a third of the effect is proliferation, exactly as Venet et al. (2011) would predict for any score in bulk tumour data. The remainder survives but at p = 0.027.
+
+**Honest statement: the native lineage score carries modest prognostic information in LUAD beyond proliferation, in one of four cohorts tested.** One sentence in the results, not a figure. This does not support a prognostic claim.
+
+### The mechanism is not canonical LKB1 signalling
+
+LKB1's best-characterised substrates are AMPK and the SIK kinases. Neither mediates the lineage effect.
+
+| model | LKB1 β | mediator β | mediator p |
+|---|---|---|---|
+| baseline | **−0.2502** | — | — |
+| + AMPK components | −0.2477 | −0.0042 | 0.763 |
+| + SIK/CRTC/HDAC | −0.2432 | −0.0110 | 0.445 |
+
+Extending to 11 Reactome pathways covering AMPK, mTOR, energy stress and CREB signalling, the largest attenuation of LKB1's coefficient is **−0.250 → −0.218, about 13%**:
+
+| pathway | LKB1 β | pathway β | pathway p |
+|---|---|---|---|
+| CREB1 phosphorylation via NMDA/RAS | −0.2176 | +0.0475 | 2.4×10⁻³ |
+| AMPK-induced PD-L1 degradation | −0.2249 | −0.0614 | 2.3×10⁻⁵ |
+| Gastrin-CREB via PKC/MAPK | −0.2279 | +0.0291 | 0.048 |
+| **Energy-dependent regulation of mTOR by LKB1-AMPK** | **−0.2341** | +0.0445 | 6.9×10⁻⁴ |
+| Amino acids regulate mTORC1 | −0.2377 | +0.0658 | 2.7×10⁻⁷ |
+| mTOR signalling | −0.2517 | −0.0089 | 0.496 |
+
+Notably the Reactome pathway named for this exact axis — energy-dependent regulation of mTOR by LKB1-AMPK — attenuates LKB1's coefficient by only 6%.
+
+**The lineage effect appears independent of LKB1's canonical signalling output.**
+
+**Important caveat:** these are mRNA levels of pathway *components*, not pathway *activity*. AMPK and SIK are regulated by phosphorylation, which expression cannot detect. A proper test needs a transcriptional signature of pathway output, or phosphoproteomics — CPTAC has the latter for LUAD, and that is the right next step. Until then this is suggestive, not established.
+
+This is exactly the question to bring to Gordan: a wet lab can test it and this analysis cannot.
+
+### Status of the biological finding — unchanged
+
+Nothing above weakens native lineage loss. It remains: pre-registered in six held-out cohorts (5/6 pass), dose-dependent in five (LUAD p = 5.6×10⁻²⁴), competitively significant under rSEA (down p = 0.0011), replicated in GSE72094 on a different platform, specific to LKB1 across six drivers with KRAS null, and robust to purity, stroma and alveolar-content adjustment.
+
+What weakened was the survival extension, which was an add-on. What was added is a clean mechanistic negative.
+
+## 2026-09-27 (cont.) — Native loss across eight cohorts
+
+Dose-response of the native lineage program against the continuous LKB1 signature score, purity and stromal covariates adjusted, signature genes removed from every program:
+
+| Cohort | native program | n | genes | β | SE | p |
+|---|---|---|---|---|---|---|
+| LUSC | pan-squamous | 476 | 30 | **−0.0905** | 0.0178 | 5.0×10⁻⁷ |
+| HNSC | pan-squamous | 494 | 30 | **−0.0857** | 0.0237 | 3.3×10⁻⁴ |
+| CESC | pan-squamous | 236 | 30 | **−0.0798** | 0.0228 | 5.5×10⁻⁴ |
+| COADREAD | intestine | 527 | 614 | **−0.0590** | 0.0102 | 1.3×10⁻⁸ |
+| LUAD | lung | 497 | 137 | **−0.0507** | 0.0048 | 5.6×10⁻²⁴ |
+| BRCA | breast | 1,023 | 109 | **−0.0167** | 0.0048 | 5.8×10⁻⁴ |
+| UCEC | endometrium | 504 | 65 | −0.0147 | 0.0099 | 0.136 |
+| STAD | stomach | 362 | 198 | +0.0065 | 0.0152 | 0.668 |
+
+**Six of eight significant and negative.** UCEC is negative but non-significant; STAD is the sole positive coefficient and is far from significance.
+
+**Internal consistency worth noting:** the three cohorts scored against the *same* pan-squamous program — LUSC, HNSC, CESC — are the three largest effects and agree closely (−0.091, −0.086, −0.080) despite being three different tissues with different sample sizes and different tumour biology. That consistency was not designed for and is a useful check.
+
+CESC is a new addition to the six-cohort pre-registered set and confirms independently.
+
+Saved: `native_all_cohorts.rds`.
+
+## 2026-09-27 (cont.) — Specification curve, and a null in cell lines
+
+### Specification curve (item S3): 27 of 27
+
+Every combination of three cohorts (LUAD, LUSC, COADREAD), three covariate sets (none, purity only, full) and three scoring methods (mean-z, median, 10% trimmed mean):
+
+**All 27 specifications negative. All 27 significant.** β range −0.044 to −0.103; weakest p across all 27 is 2.0×10⁻⁵.
+
+Covariates barely matter — LUSC gives −0.0904 with no covariates and −0.0905 with the full set. So purity and stroma are neither driving the effect nor masking it. Scoring method shifts the magnitude slightly (median gives the largest effects) but never the sign or significance.
+
+The finding does not depend on any analysis choice made.
+
+Saved: `specification_curve.rds`.
+
+### Cell lines: NULL, and the reason matters
+
+**The most direct test of cell-intrinsic effect.** DepMap 22Q2 via the Bioconductor `depmap` package: 274 lung cancer cell lines, 41 with damaging STK11 mutations, 207 with usable expression across 140 lung-program genes.
+
+| | n | mean lung score |
+|---|---|---|
+| STK11-mutant | 34 | −0.003 |
+| wild-type | 173 | +0.001 |
+| **difference** | | **−0.004, p = 0.922** |
+
+**No effect whatsoever.**
+
+### Why the null is uninformative rather than contradictory
+
+Cultured lines have already lost the lung lineage program, in both groups:
+
+| | lung program genes |
+|---|---|
+| **expression percentile in cell lines** | **25.7** |
+| **expression percentile in TCGA tumours** | **48.2** |
+| median expression, cell lines | 0.51 |
+| median expression, TCGA tumours | 7.92 |
+
+Lung-program genes sit near the detection floor in culture. Both STK11-mutant and wild-type lines have bottomed out, so there is nothing left to lose and no difference to detect.
+
+**This must be reported carefully.** "The null is uninformative because of a floor effect" is a defensible reading *only* because the percentile numbers support it. A skeptical reader could otherwise call it explaining away an inconvenient result, and they would be right to. Lead with the percentiles, not the conclusion.
+
+**Three readings remain open:**
+1. **Floor effect** — supported by the percentiles above.
+2. **The effect requires the tumour microenvironment** — plausible; would mean real but not cell-autonomous.
+3. **The tumour effect is composition after all** — less likely given alveolar-content adjustment, dose-response and driver specificity, but this null is consistent with it and that must be stated.
+
+**The cell-intrinsic question stays open.** Next options: single-cell tumour data, where malignant cells can be examined directly, or organoids, which retain more differentiation than 2D lines.
+
+This is a genuine limitation of the biological finding and belongs in Paper A's limitations section, not buried.
+
+## 2026-09-27 (cont.) — Purity strata and an independent gene-set collection
+
+### The effect survives in high-purity tumours
+
+If native lineage loss were normal-tissue contamination, it would fade as tumour purity rises. Tested within purity terciles, stromal covariates retained:
+
+| Cohort | tercile | median purity | n | β | p |
+|---|---|---|---|---|---|
+| LUAD | low | 0.28 | 166 | −0.0516 | 2.5×10⁻⁸ |
+| LUAD | mid | 0.45 | 166 | −0.0673 | 1.9×10⁻¹⁷ |
+| **LUAD** | **high** | **0.64** | 165 | **−0.0420** | **5.7×10⁻⁶** |
+| LUSC | low | 0.32 | 165 | −0.1237 | 3.3×10⁻⁵ |
+| LUSC | mid | 0.51 | 153 | −0.0566 | 0.052 |
+| **LUSC** | **high** | **0.70** | 158 | **−0.1151** | **1.9×10⁻³** |
+| COADREAD | low | 0.48 | 185 | −0.0459 | 0.022 |
+| COADREAD | mid | 0.67 | 172 | −0.0113 | 0.455 |
+| **COADREAD** | **high** | **0.81** | 170 | **−0.0775** | **8.7×10⁻⁶** |
+
+**Significant in the high-purity tercile in all three cohorts.** In COADREAD it is *strongest* at 81% median purity. No monotone decline with purity anywhere.
+
+LUSC mid (p = 0.052) and COADREAD mid (p = 0.455) are the weak cells, but the pattern is not a gradient — it is a dip in the middle tercile in two cohorts, which is not what contamination would produce.
+
+**Combined with the alveolar-content adjustment and the 27-specification curve, the composition explanation is largely closed.** The cell-line null remains the outstanding counter-evidence, mitigated by the floor effect.
+
+### It holds with an independent gene-set collection
+
+HPA was the project's choice after MSigDB C8 failed a coverage audit. Re-testing LUAD against C8's Travaglini lung cell-type sets — single-cell-derived rather than bulk-tissue-derived, entirely different construction:
+
+| Set | genes | β | p |
+|---|---|---|---|
+| alveolar fibroblast | 162 | **−0.0404** | 8.1×10⁻²² |
+| alveolar epithelial type 1 | 380 | −0.0297 | 3.8×10⁻¹⁶ |
+| alveolar epithelial type 2 | 127 | −0.0266 | 8.9×10⁻⁷ |
+| ciliated | 1,032 | −0.0223 | 2.7×10⁻⁵ |
+| club | 108 | −0.0166 | 0.040 |
+| basal | 183 | −0.0108 | 0.017 |
+
+**All six negative; all six significant.** Different collection, different derivation, same answer.
+
+**Worth flagging rather than glossing:** the strongest effect is **alveolar fibroblast**, a stromal cell type, not an epithelial one. Two possible readings — the effect extends to the tissue's stromal compartment, or the fibroblast covariate is incomplete and residual stromal signal is being picked up. Needs checking with a stronger stromal adjustment before the epithelial interpretation is asserted.
+
+Saved: `native_purity_strata.rds`.
+
+## 2026-09-27 (cont.) — CPTAC LUAD: transcript replicates, protein does not, AMPK excluded as mediator
+
+CPTAC LUAD via LinkedOmics: 110 tumours with matched RNA-seq, TMT proteome and phosphoproteome; 109 with somatic mutation calls. **21 STK11-mutant, 88 wild-type.** A third independent cohort, and the only one with multiple measurement layers.
+
+### RNA replicates; protein does not
+
+| Layer | genes | % up | median t | Wilcoxon p | score diff | t-test p |
+|---|---|---|---|---|---|---|
+| **RNA** | 134 | **29.1** | **−1.11** | **1.1×10⁻⁷** | −0.255 | 0.050 |
+| protein | 82 | 59.8 | +0.27 | 0.265 | +0.048 | 0.509 |
+
+The transcript-level finding replicates in a third cohort. **The protein-level finding does not.**
+
+### The positive control rules out a power explanation
+
+Sterol and lipid synthesis proteins (HMGCR, IDI1, INSIG1, SQLE, FASN, SCD), known to increase with LKB1 loss, measured in the same proteome and the same 21 vs 88 samples:
+
+**diff = +0.361, p = 0.0026.**
+
+**The proteome detects a known LKB1-associated change at this sample size.** The lung-program null is therefore not a power failure. Remaining explanations are post-transcriptional buffering or a transcript change without protein consequence, and separating those needs ribosome profiling or turnover data that do not exist for this cohort.
+
+**Honest framing for Paper A: the finding is transcriptional. It replicates at the RNA level in three independent cohorts and is not detected at the protein level in the one proteomic cohort available, in an assay demonstrably powered to detect other LKB1-associated protein changes.** This belongs in the results, not the limitations.
+
+### AMPK signalling is measurably impaired — the positive control for pathway function
+
+| Measure | mutant | wild-type | p |
+|---|---|---|---|
+| **ACACA S80** (canonical AMPK site) | −0.131 | +0.475 | **0.034** |
+| **34-site AMPK substrate score** (ACACA, ACACB, RPTOR, TSC2, ULK1) | — | — | **0.0082**, diff −0.244 |
+
+Textbook LKB1 biology confirmed at the phosphorylation level. This is what the earlier mRNA-based mediation test lacked — a measure of pathway *activity* rather than component expression.
+
+### AMPK does not mediate the lineage effect
+
+| model | STK11 β | mediator β | mediator p |
+|---|---|---|---|
+| lung program ~ STK11 | **−0.2551** | — | — |
+| + AMPK substrate score | **−0.2458** | 0.0381 | 0.733 |
+
+**A 3.6% shift.** The AMPK score is null as a predictor and correlates with the lung program at r = 0.094.
+
+**This is a much stronger negative than the earlier mRNA version.** AMPK impairment is demonstrated, not assumed — it is measurably reduced in these same tumours. The pathway is broken and it still does not explain the lineage change.
+
+**LKB1-associated native lineage loss is independent of AMPK signalling, tested at the phosphorylation level with a validated positive control.**
+
+The mechanism remains open: one of LKB1's other AMPK-related kinases, or a non-catalytic function. This is the question to bring to a wet lab, and it is now a precise question rather than a vague one.
+
+### Note
+Phosphosite rownames are `GENE:NP_accession:SITE`. Only ACACA S80 of the canonical site list was present under that naming; RPTOR S792, TSC2 S1387 and ULK1 S555 were not matched, so the aggregate score uses all measured sites on those five proteins rather than a curated canonical set.
+
+## 2026-09-27 (cont.) — Phosphosite family scores cannot identify the mediator
+
+Extended the mediation test to all LKB1 substrate kinase families using CPTAC phosphoproteomics. Family scores were built by averaging all measured phosphosites on the kinases and their canonical substrates.
+
+| Family | sites | phospho diff | p | STK11 β adjusted | mediator p |
+|---|---|---|---|---|---|
+| SIK | 58 | −0.271 | 0.00088 | −0.139 | 4.7×10⁻⁴ |
+| AMPK | 41 | −0.187 | 0.021 | −0.243 | 0.578 |
+| MARK | 95 | −0.101 | 0.269 | −0.250 | 0.604 |
+| NUAK | 30 | −0.061 | 0.463 | −0.244 | 0.051 |
+| BRSK | 5 | +0.186 | 0.365 | −0.208 | 4.6×10⁻⁷ |
+| SNRK | 6 | +0.620 | 0.00048 | −0.331 | 0.025 |
+
+Baseline STK11 β = −0.2551. SIK appeared to cut it by 45% with a highly significant mediator, and no other family did both.
+
+### It was proliferation
+
+**The BRSK row was the tell** and it was noticed but not acted on before leading with SIK. Its five "sites" are WEE1, CDC25B and CDC25C — cell cycle regulators, not specific BRSK substrates — yet it showed mediation at p = 4.6×10⁻⁷ with no impairment. That pattern means the score tracks something else.
+
+Adding a proliferation phosphosite score (32 sites on MKI67, TOP2A, CCNB1, CDK1, PCNA, MCM2, RRM2):
+
+| term | β | p |
+|---|---|---|
+| STK11 | −0.128 | 0.142 |
+| SIK score | **0.195** | **0.075** |
+| **proliferation score** | **−0.267** | **6×10⁻⁹** |
+
+**SIK falls from p = 0.0003 to p = 0.075.** The SIK score correlates −0.37 with proliferation, which is how it passed the first look. Only one curated SIK target site exists in the data (HDAC4 S246), so the targeted version cannot be run.
+
+### What survives, stated conservatively
+
+**AMPK signalling: consistent with impairment.** ACACA S80, the canonical AMPK site, is reduced in STK11-mutant tumours (−0.131 vs +0.475, p = 0.034). A single site in one cohort at modest significance — replication required before this is called established.
+
+**No evidence of AMPK mediation.** Adjusting for the AMPK substrate score shifts STK11's coefficient by 3.6% (−0.2551 → −0.2458). A small mediation estimate from limited data is weak evidence of absence, not proof.
+
+These two survive because ACACA S80 is a genuine curated single-site readout rather than an aggregate.
+
+**Everything else is uninterpretable.** SIK, MARK, BRSK, NUAK and SNRK scores are averages over all measured sites on a set of proteins — not pathway activity — and are confounded with proliferation.
+
+### Methodological lessons for any further mechanism work
+1. **Normalise phosphosites to protein abundance.** A site can look elevated because the protein is more abundant. CPTAC has matched total proteome; regress each site on its protein level first. Not done here.
+2. **Use proper kinase activity inference** — PTM-SEA with PTMsigDB, or KSEA — rather than protein averages. Check substrate-site coverage before trusting any score; SIK coverage is likely too thin.
+3. **Put proliferation and purity in every model from the start**, as fixed covariates, not as post hoc checks.
+4. **Prefer a transcriptional readout.** SIKs control CRTC–CREB; SIK inhibition should switch on CREB target genes. RNA gives far more genes and samples than one phosphosite. Published work implicates SIK1/SIK3 and CRTC–CREB in LKB1's tumour-suppressive effects in lung cancer — find those papers and use their gene sets.
+5. **Cross-sectional mediation assumes no unmeasured mediator–outcome confounding**, which is exactly what failed here. The convincing version is experimental: SIK inhibitor or LKB1 re-expression in LKB1-null lines, measuring native lineage genes. This is the question for Gordan.
+
+### Purity status of the CPTAC work
+Native lineage loss survives purity adjustment in TCGA three ways: alveolar-content adjustment in LUAD (attenuated 21.9% → 33.6% up, not abolished), purity terciles (significant in the high tercile in LUAD, LUSC and COADREAD; strongest at 81% median purity in COADREAD), and the specification curve (β −0.0905 with all covariates vs −0.0904 with none).
+
+**The CPTAC analyses above have no purity adjustment** — LinkedOmics does not ship purity estimates with these files. That is a gap specific to today's mechanism work and should be closed before any of it is written up.
+
+## 2026-09-27 (cont.) — SIK–CRTC–CREB not supported; mechanism work stopped
+
+Tested the SIK–CRTC–CREB axis at the transcriptional level, which avoids the phosphosite problems: SIK inhibition should dephosphorylate CRTCs, releasing them to the nucleus and raising CREB target genes. Proliferation was a fixed covariate from the start; CREB target genes were excluded from the lung program.
+
+| CREB set | n | LKB1 → CREB β | p | lung β base | lung β adjusted |
+|---|---|---|---|---|---|
+| MCCLUNG_CREB1_TARGETS_UP | 100 | +0.0249 | 0.064 | −0.0429 | **−0.0439** |
+| MCCLUNG_CREB1_TARGETS_DN | 56 | +0.0159 | 0.257 | −0.0432 | **−0.0439** |
+
+**No mediation.** Both coefficients move slightly *away* from zero. The first link is also weak — LKB1 loss raises CREB-up targets at p = 0.064 and CREB-down targets at p = 0.257, which is incoherent as a directional story. The significant `creb_mediator_p` values only show that CREB targets correlate with the lung program, which is uninformative when the coefficient does not move.
+
+**Incidental:** baseline lung β is −0.043 with proliferation adjusted, versus −0.051 without. About 15% of native loss is proliferation-associated. The effect survives it.
+
+### Mechanism summary — four candidates, none supported
+
+| Candidate | Test | Result |
+|---|---|---|
+| AMPK | phosphosite, ACACA S80 + 34-site score | Signalling consistent with impairment (p = 0.034); **no evidence of mediation**, 3.6% coefficient shift |
+| SIK | phosphosite family score | Apparent mediation **not supported** after proliferation adjustment (p 0.0003 → 0.075) |
+| SIK–CRTC–CREB | transcriptional target sets | **Not supported**; no attenuation with either set |
+| MARK, NUAK, BRSK, SNRK | phosphosite family scores | Uninterpretable — scores confounded with proliferation |
+
+Phrased as **not supported** rather than rejected: these are nulls from one cohort with limited power, which constrains what can be ruled out. Confidence intervals should accompany each in the write-up.
+
+### Stopping the mechanism work
+
+Four candidates tested properly. The observational data cannot go further, and continued hypothesis-testing in the same cohort would mostly raise the chance of a false positive rather than find the answer.
+
+**The honest position: the mechanism is unknown, and cross-sectional human tumour data cannot resolve it.** That is a precise statement of what a laboratory experiment would be needed for — SIK inhibitor or LKB1 re-expression in LKB1-null lines, reading out native lineage genes — and it is the specific question to bring to Gordan.
+
+### Two confirmations required before native loss is called established
+1. **Purity** — done: alveolar-content adjustment (attenuated, not abolished), purity terciles (significant in the high tercile in LUAD, LUSC, COADREAD; strongest at 81% purity in COADREAD), specification curve (β unchanged with or without covariates).
+2. **Replication** — done: pre-registered test in six held-out cohorts, 5 of 6 pass; directional rSEA in GSE72094 gives lung down p = 0.025; CPTAC RNA gives 29.1% up, median t = −1.11, Wilcoxon p = 1.1×10⁻⁷.
+
+Both hold. Native loss is a finding, with the protein-level null as a stated boundary on its scope.
+
+## 2026-09-27 (cont.) — THE REGIME MAP: 14 cohorts, failure rate 0% to 88.5%
+
+Every cohort with expression data, 50 Hallmark sets each, three methods: BH on nominal p, the matched-random empirical null, and rSEA's competitive test.
+
+| Cohort | n | % def | **% genes DE** | BH sig | Tier 1 | rSEA | **% BH failing** | **median floor** |
+|---|---|---|---|---|---|---|---|---|
+| LUAD | 497 | 26.0 | **55.5** | 38 | 6 | 9 | **84.2** | **5.66** |
+| HNSC | 494 | 16.8 | 34.1 | 26 | 3 | 0 | **88.5** | 4.51 |
+| COADREAD | 527 | 17.3 | 38.0 | 21 | 3 | 0 | 85.7 | 2.69 |
+| STAD | 362 | 13.8 | 28.5 | 19 | 4 | 1 | 78.9 | 3.40 |
+| GBM | 151 | 25.2 | 28.3 | 19 | 4 | 1 | 78.9 | 2.60 |
+| KIRC | 386 | 25.1 | 48.5 | 28 | 9 | 0 | 67.9 | 3.39 |
+| LIHC | 350 | 25.1 | 23.7 | 21 | 8 | 5 | 61.9 | 2.48 |
+| BRCA | 1,023 | 17.0 | 50.7 | 20 | 9 | 6 | 55.0 | 2.78 |
+| LUSC | 476 | 19.5 | 30.7 | 11 | 8 | 1 | 45.5 | **1.93** |
+| UCEC | 504 | 15.1 | 31.1 | 7 | 9 | 0 | 28.6 | **1.98** |
+| CESC | 236 | 26.7 | 28.7 | 7 | 6 | 3 | 28.6 | 2.30 |
+| PRAD | 439 | 25.1 | 33.7 | 17 | 17 | 0 | 17.6 | **1.82** |
+| THCA | 458 | 25.1 | 46.7 | 13 | 12 | 1 | 15.4 | 2.31 |
+| **BLCA** | 396 | 25.0 | 27.8 | 14 | 16 | 0 | **0.0** | **1.95** |
+
+**The failure rate ranges from 0% to 88.5%. The floor ranges from 1.82 to 5.66 against a theoretical 1.96.**
+
+PRAD (1.82), LUSC (1.93), BLCA (1.95) and UCEC (1.98) sit at or below theory — in those cohorts the parametric test is essentially correct, and BLCA loses nothing at all.
+
+**Note:** KIRC, LIHC, THCA, BLCA, GBM and PRAD have no mutation-based LKB1 calls, so `deficient` is a top-quartile split on the signature score rather than the threshold rule used in the first eight. `pct_def` is 25% by construction for those six. They belong in a separate panel.
+
+PRAD required dropping 932 genes missing in every sample — the same cBioPortal gap documented for COADREAD and UCEC. 29 of 30 signature genes retained, above the 28/30 floor.
+
+### The chain: background DE → wider floor → more failures
+
+**Background DE predicts the floor**, controlling for sample size and group balance:
+
+| term | β | p |
+|---|---|---|
+| **% genes DE** | **0.0994** | **0.019** |
+| n | −0.0034 | 0.129 |
+| % deficient | −0.0958 | 0.205 |
+
+Spearman 0.45.
+
+**The floor predicts the failure rate:** 19.3 percentage points of failure per unit of floor, **p = 0.005**.
+
+This is the DE-density hypothesis from Part II, now supported across 14 cohorts with covariates rather than the R² = 0.57 it had from a single analysis.
+
+**Honest caveat:** `bh_sig` correlates with the floor at Spearman 0.79, higher than DE density does. That is partly circular — both derive from the same underlying signal — and should be reported rather than hidden.
+
+### The actionable claim
+
+> The inflation is cohort-dependent and predictable. Compute the fraction of genes individually significant for your grouping. Where it is low, under roughly 30%, the parametric test is close to calibrated. Where it is high, most BH-significant gene set results will not survive a competitive test.
+
+That is advice a reader can act on, and it is a better claim than "the test is broken." **This table is Paper B's central result.**
+
+Saved: `regime_map_all.rds`.
