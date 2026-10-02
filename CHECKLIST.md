@@ -1,113 +1,112 @@
-# Project checklist
-Updated 2026-09-25 · **16 of 50 done, 4 failed-and-reported, 1 retracted**
+# Remaining items
+Updated 2026-09-27 (evening) · supersedes the earlier 50-item list
+
+**The arc:** a failed pre-registered hypothesis exposed a statistical problem; the corrected analysis revealed native lineage loss; the project produced a rule and a tool that predict when gene-set results can be trusted.
+
+**The concrete thing** (the equivalent of other finalists' tool or count): **the separation rule** — floor ≈ 2.37 × (median |t|)^1.38, validated across 25 cohort-grouping combinations, shipped as `sep_index()`. A one-number check, computable before any gene-set test, that says whether the analysis is in the danger zone. Plus the counterintuitive consequence: **bigger studies are worse.**
 
 ---
 
-## DONE (16)
+## TIER 1 — these decide the outcome
 
-**A. Verification**
-- [x] **3a. p-value formula** — was `b/n`, can return 0. Now `(b+1)/(n+1)`, Phipson & Smyth 2010.
-- [x] **3b. Fragile-step audit** — z-score direction +0.733, seed reproducible, no gene leakage into Tier 1, no ambiguous symbol mappings, `deficient` coded correctly.
-- [x] **4a. All stored p-values corrected** — 65% attrition unchanged at 28/43; all six survivors hold.
-- [x] **4b. Monte Carlo SEs** — and the discovery that earlier "eliminated" mechanisms were tested at 50–100 reps (SE ≈ 0.03), so they are "not supported at that resolution," not eliminated.
+- [ ] **1. Write the paper.** One STS report, one arc. Nothing else on this list matters as much.
+  - [x] Introduction drafted (PAPER_SECTIONS.md) — **needs your origin paragraph**
+  - [x] Discussion drafted — **needs your limitations section**
+  - [x] "What didn't work" section drafted (10 items)
+  - [x] Figure specifications written (5 figures + supplementary)
+  - [ ] **METHODS — yours to write.** Scaffold in PAPER_SECTIONS.md
+  - [ ] Results section — write after the figures exist
+- [x] **2a. `verify.R` written and confirmed** — reproduces β −0.0507, median |t| 2.350, floor 7.02 vs random 1.37
+- [ ] **2b. Independent rerun by another person** on a clean machine
+- [ ] **3. The Gordan experiment.** Re-express LKB1 in LKB1-null cells, measure native lineage genes. The only causal evidence available. Blocking action: schedule the meeting; have a figure ready.
+- [x] **4a. Census protocol written** (CENSUS_PROTOCOL.md) — **timestamp on OSF before screening**
+- [ ] **4b. Run the census.** 10–15 exactly reproducible papers
+- [x] **5a. Literature search done.** No prior rule predicting floor from a transcriptome-wide statistic. **Closest parallel: polygenicity-driven inflation in TWAS (AJHG 2026) — must be cited.** Novelty is narrower: new *for gene-set testing*, not as a general idea.
+- [x] **5b. Prospective test on GSE72094** — predicted 3.66, observed 4.67. Correct regime, ~20% under-prediction.
+- [ ] **5c. More platforms** if time allows
+- [ ] **6. Defend everything cold.** Explain every choice without notes. Check STS rules on AI disclosure and state your AI use plainly in the report.
 
-**C. Diagnosis → fix**
-- [x] **9. MECHANISM IDENTIFIED.** The gene-randomization null conditions on the sample split, so it captures gene-sampling variation only. Within-split null SD 0.047; the real set's statistic varies across splits with SD 0.110. **The null is 2.3× too narrow.** Replicated: G2M ratio 2.67 (COADREAD), 2.12 (BRCA), 2.34 (LUAD); Notch control 1.45, 1.34.
-- [x] **12. Residual-coherence flag** — raw ρ 0.200 vs residual 0.003 for a pure effect; 0.554 vs 0.554 for genuine coherence. In the package.
-- [x] **13. ROAST diagnosis** — see RETRACTED.
-- [x] **THE CORRECTION** (not on the original list). Rescaling the within-split null to the observed across-split spread: type I error 0.18→0.08, 0.17→0.005, 0.13→0.065, with the uninflated control unchanged. Derived from the mechanism, not fitted.
+### Census inclusion criteria — write and timestamp on OSF BEFORE screening any paper
+1. **Grouping** unambiguous: mutation status, a named clinical variable, or a published sample list.
+2. **Data** public: TCGA or GEO with accession numbers.
+3. **Scoring method** named with enough detail to implement (method, gene sets, version).
+4. **Test** identifiable from the methods section.
+5. **Success check:** their reported nominal result reproduces to a stated tolerance *before* any calibration is applied.
 
-**D. Scale**
-- [x] **15. Plasmode** — real TCGA expression, random splits, no simulator. Supersedes all synthetic type I error numbers.
-- [x] **17 (partial). Regime map** — Hallmark × 4 cohorts (80% of BH-significant results fail); coherence across Hallmark, Reactome and GO:BP (88–92.5% of sets exceed any random draw).
-- [x] **19 (partial). External cohort** — GSE72094, different platform, floors 4.66–5.81 vs theoretical 1.96.
-
-**E. Biology**
-- [x] **S1. Equivalence bounds** — effects above 0.36 (LUAD) and 0.22 (STAD) excluded. The null is a bound, not a power failure.
-
-**F. Literature**
-- [x] **25 (partial). Audit** — 5 papers read in full, none reporting any correlation correction; adoption curve 2 → ~100 papers/year.
-
-**G. Software**
-- [x] **27 (partial). Package built** — `gscalibrate` 0.1.0, 7 tests passing, R CMD check clean, vignette, published.
-
-**H. Credibility**
-- [x] **32. Smyth contact** — three substantive replies. Confirmed the central finding; corrected two errors.
+**Criterion 5 is what makes it defensible.** A paper you cannot match is **excluded**, not counted as a failure.
 
 ---
 
-## FAILED AND REPORTED (4) — these are results, not gaps
-- [x] **10. VIF rescaling** — no exponent works; two cells need heavy correction, two are broken by any. **And decisively: the VIF predicts spread ratios of 1.15–4.05 while measured ratios are 0.93–1.17.** Wrong axis — it corrects gene-level dependence when the missing variance is sample-level.
-- [x] **11. Real-set null** — only 15 of 1,195 Reactome sets match lung on size and coherence; 7 match E2F. A null needs 60+.
-- [x] **22. Causal test** — **no adequate test possible**, not a null result. A549 transcribes mutant STK11 mRNA so restoration is invisible; that leaves 4 vs 2 samples in H2126.
-- [x] **S4-adjacent. Coherence as mechanism** — ρ = 0.14 vs type I error. True as a measurement, not the cause.
+## TIER 2 — new findings that would materially strengthen it
 
-## RETRACTED (1)
-- [x] **ROAST small-set over-rejection.** Smyth: *"roast() controls the type I error rate correctly for all gene set sizes."* Real data agreed with him. Third spurious result from that simulator. **Item 14's hybrid rule withdrawn with it.**
-
----
-
-## REMAINING (34)
-
-### Immediate — this week
-- [ ] **Tighten the correction** — G2M overcorrects to 0.005; test rescaling variants at 300 reps
-- [ ] **7. Read Venet et al. 2011** — likely the closest ancestor, still unread
-- [ ] **6/8. Contribution statement** in one sentence, surviving Goeman & Bühlmann, CAMERA, Venet
-- [ ] **31. Mentor** — top priority; Bandyopadhyay follow-up is the best lead
-- [ ] **Reply to Tamayo** in own words about the AI question
-- [ ] **27b. Put the correction in the package**, replace the coherence-keyed `reliable` flag
-
-### Verification
-- [ ] **1. Clean-machine reproduction** — renv or Docker, one script regenerates every number
-- [ ] **2. Independent rerun** by another person
-- [ ] **5. OSF timestamp** (GitHub history can be rewritten)
-- [ ] **Withdraw grid-2 numbers** from the write-up; plasmode supersedes them
-
-### Scale
-- [ ] **16. Block-structured correlation** in any remaining synthetic work
-- [ ] **17b. Full regime map** — 33 TCGA types × 4 collections × 4 grouping types
-- [ ] **18. More methods** — singscore, AUCell, GSVA; fry, mroast, globaltest
-- [ ] **19b. More external cohorts** — CPTAC, other platforms
-- [ ] **S3. Multiverse / specification curve**
-- [ ] **S6. Non-cancer data** — GTEx, pseudobulk, proteomics
-
-### Biology
-- [ ] **20. Replicate HNSC** in CPTAC or GEO, pre-registered first
-- [ ] **21. Protein-level check** (CPTAC)
-- [ ] **23. DepMap/CCLE**
-- [ ] **24. Single-cell** — is bulk coherence composition or co-regulation?
-- [ ] **S2. Hierarchical model** across cohorts
-
-### Literature
-- [ ] **25b. Systematic audit** — pre-registered sample of 100 of 518, coding protocol, second coder
-- [ ] **26. Reanalyze published claims** with public data
-
-### Software
-- [ ] **S5. Cox models + optimal cutpoints** — the workflow the audited papers actually use
-- [ ] **28. Bioconductor submission**
-- [ ] **29. Documentation and coverage**
-- [ ] **30. Real users**
-- [ ] **S7. Shiny app**
-- [ ] **S8. Reporting checklist**
-
-### Credibility
-- [ ] **33. bioRxiv preprint, then submit**
-- [ ] **34. Present** — BioC, local seminar, ISEF
-- [ ] **35. Compliance forms**
-- [ ] **S9. Teach it**
-
-### Application
-- [ ] **36–41.** Report around one story · Figure 1 legible in 10 s · null as strength · own contribution explicit · essays · non-specialist readers
-- [ ] **42–43.** General science prep · drill the hard questions
+- [ ] **7. DNA methylation as the mechanism.** Kottakis et al., *Nature* 2016 linked LKB1 loss to increased DNA methylation via serine metabolism. TCGA has methylation for these cohorts. **Pre-register one prediction:** lineage-gene promoters are more methylated in LKB1-deficient tumours. Principled, with prior literature — unlike the kinase family scores.
+- [x] **8. Lineage master regulators — DONE.** 25 of 32 negative, 22 after BH. CDX2 −0.367, NKX2-1 −0.065, TP63 −0.219. Not independent of the program analysis; report as a readable subset.
+- [ ] ~~8b~~ NKX2-1 (lung), SOX2/TP63 (squamous), CDX2 (intestine). If the master regulator falls with LKB1 loss, "native loss" becomes concrete and explainable in one sentence.
+- [x] **9. Pathology grade — DONE.** HNSC ρ −0.459 (p 4.5×10⁻²⁶); LKB1-vs-grade +0.222 surviving adjustment. **KIRC reverses** (−0.102, p 0.003). LUAD/COADREAD/BRCA have no grade field.
+- [ ] ~~9b~~ TCGA records tumour grade and histologic pattern. If native loss tracks pathologist-graded poor differentiation, it is validated against something independent of expression.
+- [x] **10. Stemness — DONE.** BENPORATH_ES absorbs ~15%; **85% survives**. Not a renamed stemness signal.
+- [ ] ~~10b~~ Compare against the TCGA stemness index (Malta et al., *Cell* 2018), so nobody can say it is a known signal renamed.
+- [x] **11. Protein null — DONE, and it is NOT explained.** Four checks all clean: compression slope 0.988, predicted −0.303 vs observed +0.133, missing genes less changed, lung genes better coupled (0.613 vs 0.532). Report as genuine discordance.
+- [ ] ~~11b~~ Check mRNA–protein correlation for lineage genes in CPTAC. If these genes correlate poorly in general, the null is expected rather than contradictory.
+- [x] **12. Hormone hypothesis — DONE, NOT SUPPORTED.** THCA function genes rise (TSHR +0.171), NKX2-1 alone falls (−0.265). PRAD incoherent. **The reversal stands unexplained.**
+- [x] **13. HNSC discrepancy — RESOLVED.** Down-portion 50% at p<0.05 vs 34.1% background, only 30 genes. Direction differs sharply (−1.58 vs +0.68), proportion barely. The two tests measure different things.
+- [ ] **14. Derive the separation rule theoretically.** Why does the floor scale with median |t| to roughly the 1.4 power? Theory plus data beats a fitted curve.
+- [x] **15. Effect sizes — DONE.** Deficient vs intact in SD: LUSC −0.62, LUAD −0.50, CESC −0.47, COADREAD −0.43, HNSC −0.25, BRCA −0.15.
 
 ---
 
-## The story, as it now stands
-1. Pre-registered pan-cancer hypothesis. Not supported.
-2. The control killed 65% of the analysis's own BH-significant results — 80% across four cohorts on Hallmark.
-3. Seven candidate mechanisms tested and not supported.
-4. **The real mechanism: the null conditions on the sample split and is 2.3× too narrow.** Replicated in two held-out cohorts.
-5. A correction that follows from the mechanism and restores approximate calibration.
-6. A released tool.
+## TIER 3 — credibility
 
-**Still missing:** the paper.
+- [x] **16. Test ledger written** (TEST_LEDGER.md) — confirmatory / amended / post hoc, plus 9 withdrawn claims and 4 self-corrections
+- [ ] **17. Power and equivalence bounds for every important null** — STAD, the protein level, the mechanism tests.
+- [ ] **18. Statistician review of the code**, ideally through Gordan's network.
+- [ ] **19. Preprint, then journal submission.**
+- [ ] **20. Submit `gscalibrate` to Bioconductor.**
+- [ ] **21. Present once** before the application, to practise defending it.
+- [ ] **22. Two recommendation letters** — Gordan, and a teacher who knows the work.
+
+---
+
+## TIER 4 — the application
+
+- [x] **23a. Figure specifications written.** Data files named for each.
+- [ ] **23b. Make the figures:** the attrition (43→15→6) · the coherence gap (0.245 vs 0.021) · the regime map with the rule · native loss across cohorts · the experiment
+- [ ] **24. A one-sentence headline that is exactly true.**
+- [ ] **25. A plain-language "this could help" line.**
+- [ ] **26. Essays** on the moment the control overturned your own results, and what you did next.
+- [ ] **27. Interview prep** — general science problem-solving, plus the hardest questions about the project.
+
+---
+
+## EXPLICITLY SKIPPING
+
+Single-cell · the Shiny app · immunotherapy response · more mechanism hunting in the same data · more cohorts beyond what validation needs · any new biological hypothesis not listed above.
+
+Each costs time and adds false-positive risk without making the central claims harder to attack. The report has 20 pages; every addition takes space from what matters.
+
+---
+
+## THE STOPPING RULE
+
+Before adding anything: **does this make the central claim harder to attack?** If yes, add it. If it only adds another result, skip it.
+
+---
+
+## WHERE FURTHER IMPROVEMENTS COME FROM
+
+Not from more analysis. Once a draft exists:
+- **Gordan** — the biology
+- **A statistician** — the methods
+- **A smart non-expert** — clarity
+- **One adversarial reader** — whose only job is to find the weakest claim and attack it
+
+**Their objections are the real remaining to-do list.**
+
+---
+
+## THE TARGET WRITE-UP
+
+With the Gordan experiment:
+> Joel Minocha, 17, created a simple test that tells cancer researchers when their results may be false. A popular method compares the activity of gene groups between tumours, and Joel discovered that it fails more often in larger studies, not less. He found a rule that predicts how badly it will fail from information researchers already have, built software that flags at-risk analyses, and used it to check published studies. While testing an idea about how cancers lose the tumour-suppressor gene LKB1, he found the opposite of what was expected: many tumours lose their own tissue identity, a result he confirmed in the lab.
+
+Without it, end at "...lose their own tissue identity across seven cancer types."
